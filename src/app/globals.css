@@ -1,0 +1,608 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,600&family=Great+Vibes&family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&family=Montserrat:wght@400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --brand-navy: #0E1B47;
+  --brand-navy-dark: #070E26;
+  --brand-navy-light: #182B6B;
+  --brand-gold: #C9A14A;
+  --brand-gold-light: #E8C97A;
+  --brand-gold-dark: #9A7526;
+  --paper: #FFFFFF;
+  --ink: #1A1A1A;
+  --font-inter: 'Inter', sans-serif;
+  --font-cormorant: 'Cormorant Garamond', 'Playfair Display', serif;
+  --font-great-vibes: 'Great Vibes', cursive;
+}
+
+body {
+  background-color: #070E26;
+  color: #F1F5F9;
+  font-family: var(--font-inter);
+  overflow-x: hidden;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #070E26;
+}
+::-webkit-scrollbar-thumb {
+  background: #182B6B;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #C9A14A;
+}
+
+/* Typography Utility Classes */
+.font-serif-title {
+  font-family: var(--font-cormorant);
+}
+
+.font-cursive-name {
+  font-family: var(--font-great-vibes);
+}
+
+/* =========================================================================
+   CERTIFICATE PIXEL-PERFECT STYLING (100% MATCH SAMPLE CERTIFICATE)
+   ========================================================================= */
+
+.cert-container-stage {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: radial-gradient(circle at center, #182B6B 0%, #070E26 100%);
+  padding: 1.5rem;
+  border-radius: 1.25rem;
+  overflow: hidden;
+}
+
+.cert-canvas-card {
+  width: 1122px;
+  height: 793px;
+  background-color: #FFFFFF;
+  color: #0E1B47;
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+  padding: 16px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(201, 161, 74, 0.4);
+  font-family: 'Montserrat', 'Inter', sans-serif;
+  user-select: none;
+}
+
+/* Top-Left Triangular Corner */
+.cert-canvas-card .corner-tl-navy {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 155px;
+  height: 155px;
+  background: linear-gradient(135deg, #0E1B47 75%, transparent 75%);
+  z-index: 10;
+}
+.cert-canvas-card .corner-tl-gold {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 162px;
+  height: 162px;
+  background: linear-gradient(135deg, #C9A14A 77%, transparent 77%);
+  z-index: 9;
+}
+
+/* Top-Left Circular Laurel Monogram Badge */
+.cert-canvas-card .corner-badge-tl {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #FFFBEB 0%, #C9A14A 60%, #8A641B 100%);
+  padding: 2.5px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.35);
+  z-index: 12;
+}
+
+.cert-canvas-card .corner-badge-inner {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: #0E1B47;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border: 1px dashed #C9A14A;
+  padding: 1px;
+}
+.cert-canvas-card .corner-badge-inner .badge-stars {
+  font-size: 6px;
+  color: #FDE047;
+  letter-spacing: 1.5px;
+  line-height: 1;
+}
+.cert-canvas-card .corner-badge-inner .badge-monogram {
+  font-size: 13px;
+  font-weight: 900;
+  color: #FFFFFF;
+  line-height: 1;
+  letter-spacing: 0.5px;
+}
+.cert-canvas-card .corner-badge-inner .badge-subtext {
+  font-size: 5px;
+  font-weight: 700;
+  color: #E8C97A;
+  line-height: 1;
+  margin-top: 1.5px;
+  text-transform: uppercase;
+}
+
+/* Top-Right Tag & Corner */
+.cert-canvas-card .corner-tr-navy {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 250px;
+  height: 42px;
+  background: linear-gradient(225deg, #0E1B47 70%, transparent 70%);
+  z-index: 10;
+}
+.cert-canvas-card .corner-tr-gold {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 258px;
+  height: 48px;
+  background: linear-gradient(225deg, #C9A14A 72%, transparent 72%);
+  z-index: 9;
+}
+.cert-canvas-card .cert-id-tag {
+  position: absolute;
+  top: 8px;
+  right: 20px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #FFFFFF;
+  letter-spacing: 0.5px;
+  z-index: 20;
+  font-family: 'Inter', sans-serif;
+  white-space: nowrap;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+}
+
+/* Bottom Ribbons */
+.cert-canvas-card .corner-bl-gold {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 110px;
+  height: 110px;
+  background: linear-gradient(45deg, #C9A14A 42%, transparent 42%);
+  z-index: 5;
+}
+.cert-canvas-card .corner-bl-navy {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 95px;
+  height: 95px;
+  background: linear-gradient(45deg, #0E1B47 40%, transparent 40%);
+  z-index: 6;
+}
+.cert-canvas-card .corner-br-gold {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 110px;
+  height: 110px;
+  background: linear-gradient(-45deg, #C9A14A 42%, transparent 42%);
+  z-index: 5;
+}
+.cert-canvas-card .corner-br-navy {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 95px;
+  height: 95px;
+  background: linear-gradient(-45deg, #0E1B47 40%, transparent 40%);
+  z-index: 6;
+}
+
+/* Inner Frame */
+.cert-canvas-card .inner-gold-frame {
+  width: 100%;
+  height: 100%;
+  border: 1.8px solid #C9A14A;
+  padding: 20px 36px 14px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  z-index: 8;
+}
+
+/* Brand Header */
+.cert-canvas-card .cert-header-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+.cert-canvas-card .brand-emblem-box {
+  width: 48px;
+  height: 48px;
+  background: #0E1B47;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  box-shadow: 0 4px 10px rgba(14, 27, 71, 0.25);
+}
+.cert-canvas-card .brand-emblem-t {
+  color: #FFFFFF;
+  font-size: 1.4rem;
+  font-weight: 900;
+  margin-right: -1px;
+}
+.cert-canvas-card .brand-emblem-v {
+  color: #C9A14A;
+  font-size: 1.4rem;
+  font-weight: 900;
+}
+.cert-canvas-card .brand-emblem-star {
+  position: absolute;
+  top: 3px;
+  right: 5px;
+  font-size: 8px;
+  color: #FACC15;
+}
+.cert-canvas-card .brand-title-wrap {
+  text-align: left;
+}
+.cert-canvas-card .brand-main-spelling {
+  font-size: 1.55rem;
+  font-weight: 900;
+  letter-spacing: 2px;
+  line-height: 1;
+}
+.cert-canvas-card .brand-navy-txt {
+  color: #0E1B47;
+}
+.cert-canvas-card .brand-gold-txt {
+  color: #C9A14A;
+  margin-left: 4px;
+}
+.cert-canvas-card .brand-sub-tagline {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: #475569;
+  letter-spacing: 2.2px;
+  display: block;
+  margin-top: 4px;
+  text-transform: uppercase;
+}
+
+/* Certificate Title Block */
+.cert-canvas-card .cert-title-section {
+  text-align: center;
+  margin-top: -2px;
+}
+.cert-canvas-card .cert-heading-main {
+  font-family: var(--font-cormorant);
+  font-size: 2.75rem;
+  font-weight: 700;
+  letter-spacing: 5px;
+  color: #0E1B47;
+  margin: 0;
+  line-height: 1.1;
+}
+.cert-canvas-card .cert-sub-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 4px;
+}
+.cert-canvas-card .gold-divider-bar {
+  width: 100px;
+  height: 1.5px;
+  background: #C9A14A;
+}
+.cert-canvas-card .cert-sub-text {
+  font-size: 0.9rem;
+  font-weight: 800;
+  letter-spacing: 3.5px;
+  color: #C9A14A;
+  text-transform: uppercase;
+}
+.cert-canvas-card .certify-statement {
+  font-size: 0.85rem;
+  color: #64748B;
+  font-weight: 600;
+  margin-top: 6px;
+}
+
+/* Participant Name - Simple Bold Font */
+.cert-canvas-card .recipient-name-block {
+  text-align: center;
+  margin: 10px 0 14px;
+}
+.cert-canvas-card .recipient-cursive-name {
+  font-family: 'Montserrat', 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: 2.35rem;
+  font-weight: 800;
+  color: #0E1B47;
+  line-height: 1.2;
+  letter-spacing: 1.2px;
+  padding-bottom: 6px;
+  display: block;
+}
+.cert-canvas-card .diamond-underline-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 360px;
+  margin: 6px auto 0;
+  clear: both;
+}
+.cert-canvas-card .diamond-bar {
+  flex: 1;
+  height: 1.2px;
+  background: #C9A14A;
+}
+.cert-canvas-card .diamond-point {
+  font-size: 9px;
+  color: #C9A14A;
+}
+
+/* 3-Column Body */
+.cert-canvas-card .cert-body-columns {
+  display: grid;
+  grid-template-columns: 160px 1fr 160px;
+  gap: 20px;
+  align-items: center;
+}
+
+/* Left Metadata Column */
+.cert-canvas-card .cert-meta-left {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.cert-canvas-card .meta-item-box {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.cert-canvas-card .meta-gold-circle {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1.2px solid #C9A14A;
+  color: #C9A14A;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+.cert-canvas-card .meta-field-label {
+  font-size: 0.58rem;
+  font-weight: 800;
+  color: #64748B;
+  display: block;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.cert-canvas-card .meta-field-value {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #0E1B47;
+  line-height: 1.25;
+}
+
+/* Center Narrative Body */
+.cert-canvas-card .cert-center-narrative {
+  text-align: center;
+  padding: 0 8px;
+}
+.cert-canvas-card .narrative-line-1 {
+  font-size: 0.88rem;
+  color: #334155;
+  margin: 0;
+  font-weight: 500;
+}
+.cert-canvas-card .narrative-course-highlight {
+  font-family: var(--font-cormorant);
+  font-size: 1.28rem;
+  font-weight: 700;
+  color: #0E1B47;
+  margin: 4px 0;
+  letter-spacing: 0.5px;
+}
+.cert-canvas-card .narrative-details-line {
+  font-size: 0.8rem;
+  color: #475569;
+  line-height: 1.45;
+  margin: 4px 0;
+}
+.cert-canvas-card .narrative-best-wishes {
+  font-size: 0.76rem;
+  color: #64748B;
+  font-style: italic;
+  margin-top: 5px;
+}
+
+/* Right Column: Verified Shield + QR */
+.cert-canvas-card .cert-verify-right {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.cert-canvas-card .verified-shield-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.cert-canvas-card .shield-icon-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1.5px solid #C9A14A;
+  background: #F0FDF4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #16A34A;
+  box-shadow: 0 2px 6px rgba(22, 163, 74, 0.15);
+}
+.cert-canvas-card .shield-verified-text {
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  color: #16A34A;
+  margin-top: 2px;
+  text-transform: uppercase;
+}
+.cert-canvas-card .cert-qr-container {
+  background: #FFFFFF;
+  padding: 4px;
+  border: 1.2px solid #E2E8F0;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.06);
+  width: 96px; height: 96px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cert-canvas-card .cert-qr-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.cert-canvas-card .scan-verify-note {
+  font-size: 0.58rem;
+  font-weight: 700;
+  color: #475569;
+  line-height: 1.2;
+  margin-top: 4px;
+}
+
+/* Bottom Footer: Signatories & Gold Circular Medal */
+.cert-canvas-card .cert-footer-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding-top: 4px;
+}
+.cert-canvas-card .sig-column-box {
+  width: 180px;
+  text-align: center;
+}
+.cert-canvas-card .sig-cursive-preview {
+  font-family: var(--font-great-vibes);
+  font-size: 2.2rem;
+  color: #0E1B47;
+  line-height: 1;
+  height: 40px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.cert-canvas-card .sig-gold-line {
+  height: 1.5px;
+  background: #C9A14A;
+  margin: 4px 0;
+}
+.cert-canvas-card .sig-person-name {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #0E1B47;
+}
+.cert-canvas-card .sig-person-title {
+  font-size: 0.68rem;
+  color: #64748B;
+  font-weight: 600;
+}
+
+/* Center Circular Gold Embossed Seal */
+.cert-canvas-card .center-gold-seal {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.cert-canvas-card .seal-circle-outer {
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #FFFBEB 0%, #C9A14A 60%, #8A641B 100%);
+  padding: 3px;
+  box-shadow: 0 6px 14px rgba(201, 161, 74, 0.4);
+}
+.cert-canvas-card .seal-circle-inner {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: #0E1B47;
+  border: 1.2px dashed #E8C97A;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: #E8C97A;
+  padding: 2px;
+}
+.cert-canvas-card .seal-top-text {
+  font-size: 5px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  line-height: 1;
+  color: #E8C97A;
+}
+.cert-canvas-card .seal-stars {
+  font-size: 7px;
+  color: #FACC15;
+  letter-spacing: 1px;
+  margin: 1px 0;
+  line-height: 1;
+}
+.cert-canvas-card .seal-main-word {
+  font-size: 7.5px;
+  font-weight: 900;
+  letter-spacing: 1.2px;
+  color: #FFFFFF;
+  line-height: 1;
+}
+.cert-canvas-card .seal-flourish {
+  font-size: 7px;
+  color: #C9A14A;
+  line-height: 1;
+  margin-top: 1px;
+}
+
+/* Bottom URL Footer */
+.cert-canvas-card .cert-bottom-link-row {
+  text-align: center;
+  font-size: 0.64rem;
+  font-weight: 700;
+  color: #0E1B47;
+  letter-spacing: 1px;
+  margin-top: 4px;
+}

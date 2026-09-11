@@ -1,0 +1,69 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x", "debian-openssl-3.0.x"]
+}
+
+model User {
+  id          String       @id @default(cuid())
+  email       String       @unique
+  name        String
+  role        String       @default("STUDENT")
+  password    String?
+  enrollments Enrollment[]
+  createdAt   DateTime     @default(now())
+}
+
+model Course {
+  id           String       @id @default(cuid())
+  slug         String       @unique
+  title        String
+  category     String
+  durationDays Int
+  mode         String
+  priceINR     Int          @default(149)
+  description  String
+  learn        String
+  tools        String
+  thumbnail    String
+  enrollments  Enrollment[]
+}
+
+model Enrollment {
+  id                String       @id @default(cuid())
+  orderId           String       @unique
+  userId            String
+  courseId          String
+  userName          String
+  college           String?
+  startDate         DateTime
+  endDate           DateTime
+  issueDate         DateTime     @default(now())
+  mode              String
+  amountINR         Int          @default(149)
+  paymentId         String?
+  utrNumber         String?
+  paymentLink       String?
+  paymentScreenshot String?
+  lor               Boolean      @default(true)
+  paymentStatus     String       @default("PENDING")
+  certificate       Certificate?
+  createdAt         DateTime     @default(now())
+  user              User         @relation(fields: [userId], references: [id])
+  course            Course       @relation(fields: [courseId], references: [id])
+}
+
+model Certificate {
+  id           String     @id @default(cuid())
+  certNo       String     @unique
+  enrollmentId String     @unique
+  pdfUrl       String     @default("")
+  qrPayload    String
+  issuedAt     DateTime   @default(now())
+  revoked      Boolean    @default(false)
+  enrollment   Enrollment @relation(fields: [enrollmentId], references: [id])
+}
