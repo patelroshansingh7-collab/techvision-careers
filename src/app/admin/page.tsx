@@ -1188,15 +1188,28 @@ export default function AdminDashboardPage() {
                 {/* Submitted Proof Details (UTR & Screenshot) */}
                 <div className="p-3 bg-slate-900/90 rounded-xl border border-slate-800 space-y-2 text-xs">
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-400 font-medium">Submitted UTR / Ref:</span>
+                    <span className="text-slate-400 font-medium">Payment Proof:</span>
                     <div className="flex items-center gap-1.5">
-                      <code className="font-mono font-bold text-amber-300 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
-                        {order.utrNumber || "No UTR provided"}
-                      </code>
-                      {order.utrNumber && (
+                      {order.paymentScreenshot ? (
+                        <span className="px-2 py-0.5 rounded bg-emerald-950/90 text-emerald-300 border border-emerald-800 text-[10px] font-bold flex items-center gap-1">
+                          📸 Screenshot Attached
+                        </span>
+                      ) : order.utrNumber && order.utrNumber !== "SCREENSHOT_PROOF" ? (
+                        <code className="font-mono font-bold text-amber-300 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
+                          {order.utrNumber}
+                        </code>
+                      ) : order.paymentStatus === "PAID" ? (
+                        <span className="px-2 py-0.5 rounded bg-emerald-950/50 text-emerald-300 border border-emerald-900 text-[10px] font-medium">
+                          Approved & Verified
+                        </span>
+                      ) : (
+                        <span className="text-slate-500 italic text-[11px]">No proof provided</span>
+                      )}
+
+                      {order.utrNumber && order.utrNumber !== "SCREENSHOT_PROOF" && (
                         <button
                           onClick={() => copyUtr(order.utrNumber)}
-                          className="p-1 bg-slate-800 hover:bg-slate-700 rounded text-slate-300 transition"
+                          className="p-1 bg-slate-800 hover:bg-slate-700 rounded text-slate-300 transition cursor-pointer"
                           title="Copy UTR"
                         >
                           {copiedUtr === order.utrNumber ? (
@@ -1209,6 +1222,15 @@ export default function AdminDashboardPage() {
                     </div>
                   </div>
 
+                  {order.utrNumber && order.utrNumber !== "SCREENSHOT_PROOF" && order.paymentScreenshot && (
+                    <div className="flex items-center justify-between pt-1 border-t border-slate-800/80">
+                      <span className="text-slate-400 font-medium">UTR Reference:</span>
+                      <code className="font-mono font-bold text-amber-300 bg-slate-950 px-2 py-0.5 rounded border border-slate-800 text-[11px]">
+                        {order.utrNumber}
+                      </code>
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-between pt-1 border-t border-slate-800/80">
                     <span className="text-slate-400 font-medium">Screenshot Proof:</span>
                     {order.paymentScreenshot ? (
@@ -1217,7 +1239,7 @@ export default function AdminDashboardPage() {
                           setPreviewImage(order.paymentScreenshot);
                           setPreviewOrder(order);
                         }}
-                        className="py-1 px-2.5 bg-indigo-950 hover:bg-indigo-900 text-indigo-200 border border-indigo-700/80 rounded-lg text-[11px] font-bold flex items-center gap-1 transition cursor-pointer"
+                        className="py-1 px-2.5 bg-indigo-950 hover:bg-indigo-900 text-indigo-200 border border-indigo-700/80 rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition cursor-pointer shadow-sm"
                       >
                         <Eye className="w-3.5 h-3.5 text-indigo-400" />
                         <span>View Screenshot</span>
@@ -1333,24 +1355,43 @@ export default function AdminDashboardPage() {
                       <span className="text-[10px] text-slate-500">{order.mode} • {formatINR(order.amountINR)}</span>
                     </td>
                     <td className="p-3">
-                      <div className="space-y-1">
-                        {order.utrNumber ? (
-                          <span className="font-mono text-[11px] text-amber-300 block">
-                            {order.utrNumber}
+                      <div className="space-y-1.5">
+                        {order.paymentScreenshot ? (
+                          <div>
+                            <div className="flex items-center gap-1 mb-1">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-950/80 text-emerald-300 border border-emerald-800 text-[10px] font-bold">
+                                📸 Screenshot
+                              </span>
+                            </div>
+                            {order.utrNumber && order.utrNumber !== "SCREENSHOT_PROOF" && (
+                              <span className="font-mono text-[11px] text-amber-300 block mb-1">
+                                {order.utrNumber}
+                              </span>
+                            )}
+                            <button
+                              onClick={() => {
+                                setPreviewImage(order.paymentScreenshot);
+                                setPreviewOrder(order);
+                              }}
+                              className="text-[11px] text-indigo-300 hover:text-indigo-200 bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-800/70 px-2 py-0.5 rounded font-bold inline-flex items-center gap-1 transition cursor-pointer"
+                            >
+                              <Eye className="w-3 h-3 text-indigo-400" />
+                              <span>View Receipt</span>
+                            </button>
+                          </div>
+                        ) : order.utrNumber && order.utrNumber !== "SCREENSHOT_PROOF" ? (
+                          <div>
+                            <span className="font-mono text-[11px] text-amber-300 block font-bold">
+                              {order.utrNumber}
+                            </span>
+                            <span className="text-slate-500 text-[10px] block">No Screenshot</span>
+                          </div>
+                        ) : isPaid ? (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-950/40 text-emerald-400 border border-emerald-900/60 text-[10px] font-medium">
+                            ✓ Verified & Approved
                           </span>
                         ) : (
-                          <span className="text-slate-600 text-[10px]">No UTR</span>
-                        )}
-                        {order.paymentScreenshot && (
-                          <button
-                            onClick={() => {
-                              setPreviewImage(order.paymentScreenshot);
-                              setPreviewOrder(order);
-                            }}
-                            className="text-[10px] text-indigo-400 hover:underline font-bold flex items-center gap-1"
-                          >
-                            <Eye className="w-3 h-3" /> View Receipt
-                          </button>
+                          <span className="text-slate-500 text-[10px] italic">No UTR / Proof</span>
                         )}
                       </div>
                     </td>

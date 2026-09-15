@@ -34,12 +34,17 @@ export async function POST(req: NextRequest) {
     let studentEmail = userEmail || "";
     let finalCourseTitle = courseTitle || "";
 
+    // Guarantee that if a screenshot is uploaded without a manual UTR, it is explicitly marked as SCREENSHOT_PROOF
+    const effectiveUtr =
+      (utrNumber && utrNumber.trim()) ||
+      (paymentScreenshot ? "SCREENSHOT_PROOF" : null);
+
     // 1. Sync from cloud storage first so this lambda instance has the latest order
     await memoryStore.syncFromCloud().catch(() => {});
 
     // 2. Try Memory Store
     let memEnr = memoryStore.submitPaymentProof(orderId, {
-      utrNumber,
+      utrNumber: effectiveUtr,
       paymentScreenshot,
       paymentLink,
       isSimulated,
@@ -65,7 +70,7 @@ export async function POST(req: NextRequest) {
 
         const effectivePaymentId =
           paymentId ||
-          (utrNumber ? `UPI_UTR_${utrNumber.trim()}` : `pay_proof_${Date.now()}`);
+          (effectiveUtr ? `UPI_UTR_${effectiveUtr}` : `pay_proof_${Date.now()}`);
 
         if (isSimulated) {
           const updatedEnrollment = await prisma.enrollment.update({
@@ -73,7 +78,7 @@ export async function POST(req: NextRequest) {
             data: {
               paymentStatus: "PAID",
               paymentId: effectivePaymentId,
-              utrNumber: utrNumber ? utrNumber.trim() : `SIM_${Date.now()}`,
+              utrNumber: effectiveUtr || `SIM_${Date.now()}`,
               paymentScreenshot: paymentScreenshot || null,
               paymentLink: paymentLink ? paymentLink.trim() : null,
             },
@@ -106,7 +111,7 @@ export async function POST(req: NextRequest) {
           data: {
             paymentStatus: "SUBMITTED",
             paymentId: effectivePaymentId,
-            utrNumber: utrNumber ? utrNumber.trim() : null,
+            utrNumber: effectiveUtr,
             paymentScreenshot: paymentScreenshot || null,
             paymentLink: paymentLink ? paymentLink.trim() : null,
           },
@@ -119,7 +124,7 @@ export async function POST(req: NextRequest) {
             userEmail: studentEmail || "student@example.com",
             courseTitle: finalCourseTitle || "Internship Course",
             orderId,
-            utrNumber,
+            utrNumber: effectiveUtr,
             hasScreenshot: !!paymentScreenshot,
           });
         } catch (e) {
@@ -146,7 +151,7 @@ export async function POST(req: NextRequest) {
         courseTitle: finalCourseTitle || "Engineering Internship Course",
         college,
         amountINR: amountINR || 149,
-        utrNumber,
+        utrNumber: effectiveUtr,
         paymentScreenshot,
         paymentLink,
         paymentStatus: isSimulated ? "PAID" : "SUBMITTED",
@@ -161,7 +166,7 @@ export async function POST(req: NextRequest) {
           userEmail: studentEmail || memEnr.userEmail,
           courseTitle: finalCourseTitle || memEnr.course?.title || "Internship Course",
           orderId,
-          utrNumber,
+          utrNumber: effectiveUtr,
           hasScreenshot: !!paymentScreenshot,
         });
       } catch (err) {

@@ -594,7 +594,10 @@ export const memoryStore = {
     let enr = memoryStore.getEnrollmentByOrderId(orderId);
     if (!enr) return undefined;
 
-    enr.utrNumber = proof.utrNumber || enr.utrNumber;
+    enr.utrNumber =
+      proof.utrNumber ||
+      enr.utrNumber ||
+      (proof.paymentScreenshot ? "SCREENSHOT_PROOF" : null);
     enr.paymentScreenshot = proof.paymentScreenshot || enr.paymentScreenshot;
     enr.paymentLink = proof.paymentLink || enr.paymentLink;
 

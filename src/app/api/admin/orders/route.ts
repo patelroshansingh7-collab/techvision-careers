@@ -174,6 +174,7 @@ export async function POST(req: NextRequest) {
             college: ord.college,
             amountINR: ord.amountINR,
             utrNumber: ord.utrNumber,
+            paymentScreenshot: ord.paymentScreenshot,
             paymentStatus: ord.paymentStatus,
           });
         }
@@ -205,6 +206,7 @@ export async function POST(req: NextRequest) {
           college: incomingOrder.college,
           amountINR: incomingOrder.amountINR,
           utrNumber: incomingOrder.utrNumber,
+          paymentScreenshot: incomingOrder.paymentScreenshot,
           paymentStatus: "PAID",
         });
       }

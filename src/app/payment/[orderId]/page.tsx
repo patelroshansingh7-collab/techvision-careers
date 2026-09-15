@@ -85,22 +85,78 @@ export default function PaymentPage({
     fetchOrder();
   }, [orderId]);
 
-  // Handle Screenshot Upload
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Helper to compress screenshot client-side before sending (avoids Vercel 4.5MB limit and cloud JSON size limits)
+  const compressImage = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (readerEvent) => {
+        const img = new Image();
+        img.onload = () => {
+          const maxDimension = 1000;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > maxDimension) {
+              height = Math.round((height * maxDimension) / width);
+              width = maxDimension;
+            }
+          } else {
+            if (height > maxDimension) {
+              width = Math.round((width * maxDimension) / height);
+              height = maxDimension;
+            }
+          }
+
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            resolve(readerEvent.target?.result as string);
+            return;
+          }
+
+          ctx.drawImage(img, 0, 0, width, height);
+          // Compress to JPEG with 0.72 quality (~40-80KB from 4MB)
+          const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.72);
+          resolve(compressedDataUrl);
+        };
+        img.onerror = () => {
+          resolve(readerEvent.target?.result as string);
+        };
+        img.src = readerEvent.target?.result as string;
+      };
+      reader.onerror = (error) => reject(error);
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // Handle Screenshot Upload with auto-compression
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      setError("Screenshot image size should be less than 5MB.");
+    if (file.size > 20 * 1024 * 1024) {
+      setError("Screenshot image size should be less than 20MB.");
       return;
     }
 
-    setScreenshotFileName(file.name);
-    const reader = new FileReader();
-    reader.onload = () => {
-      setScreenshotBase64(reader.result as string);
-    };
-    reader.readAsDataURL(file);
+    try {
+      setScreenshotFileName(`${file.name} (Compressing...)`);
+      const compressed = await compressImage(file);
+      setScreenshotBase64(compressed);
+      setScreenshotFileName(file.name);
+      setError(null);
+    } catch (err) {
+      console.error("Compression error, fallback to raw reader:", err);
+      const reader = new FileReader();
+      reader.onload = () => {
+        setScreenshotBase64(reader.result as string);
+        setScreenshotFileName(file.name);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   // Submit Payment Details
@@ -117,13 +173,16 @@ export default function PaymentPage({
     setSubmitting(true);
     setError(null);
 
+    // If student only uploaded screenshot without entering text UTR, mark as SCREENSHOT_PROOF
+    const finalUtr = utrNumber.trim() || (screenshotBase64 ? "SCREENSHOT_PROOF" : "");
+
     try {
       const res = await fetch("/api/payment/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           orderId,
-          utrNumber: isSimulated ? `SIM_${Date.now()}` : utrNumber.trim(),
+          utrNumber: isSimulated ? `SIM_${Date.now()}` : finalUtr,
           paymentScreenshot: screenshotBase64,
           paymentLink: paymentLink.trim() || null,
           isSimulated,
@@ -140,7 +199,7 @@ export default function PaymentPage({
         throw new Error(data.message || "Payment verification failed");
       }
 
-      // Update localStorage cache with SUBMITTED status
+      // Update localStorage cache with SUBMITTED status and screenshot
       try {
         const cached = localStorage.getItem(`tv_order_${orderId}`);
         const parsed = cached ? JSON.parse(cached) : {};
@@ -149,7 +208,8 @@ export default function PaymentPage({
           JSON.stringify({
             ...parsed,
             paymentStatus: data.paymentStatus || "SUBMITTED",
-            utrNumber: utrNumber || null,
+            utrNumber: finalUtr || null,
+            paymentScreenshot: screenshotBase64 || parsed.paymentScreenshot || null,
           })
         );
       } catch (e) {}
