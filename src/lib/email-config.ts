@@ -28,9 +28,22 @@ const CONFIG_FILE =
     ? path.join(process.cwd(), ".tmp_notification_config.json")
     : "/tmp/tv_notification_config.json";
 
+export function sanitizeAdminEmail(email?: string): string {
+  if (!email || typeof email !== "string" || !email.includes("@")) {
+    return "patelroshansingh7@gmail.com";
+  }
+  const clean = email.trim().toLowerCase();
+  // Any dummy domain or non-existent custom domain email like admin@techvisioncareers.com MUST be routed to real Gmail
+  if (clean.endsWith("@techvisioncareers.com") || clean.includes("techvisioncareers.com")) {
+    return "patelroshansingh7@gmail.com";
+  }
+  return clean;
+}
+
 export function getEmailConfig(): NotificationSettings {
   // 1. In-Memory Cache
   if (globalCache.tv_email_config) {
+    globalCache.tv_email_config.adminEmail = sanitizeAdminEmail(globalCache.tv_email_config.adminEmail);
     return globalCache.tv_email_config;
   }
 
@@ -39,6 +52,7 @@ export function getEmailConfig(): NotificationSettings {
     if (fs.existsSync(CONFIG_FILE)) {
       const data = fs.readFileSync(CONFIG_FILE, "utf-8");
       const parsed = JSON.parse(data);
+      parsed.adminEmail = sanitizeAdminEmail(parsed.adminEmail);
       globalCache.tv_email_config = parsed;
       return parsed;
     }
@@ -48,7 +62,7 @@ export function getEmailConfig(): NotificationSettings {
 
   // 3. Fallback to Defaults and Environment Variables
   const envConfig: NotificationSettings = {
-    adminEmail: process.env.ADMIN_EMAIL || "patelroshansingh7@gmail.com",
+    adminEmail: sanitizeAdminEmail(process.env.ADMIN_EMAIL || "patelroshansingh7@gmail.com"),
     adminPhone: process.env.ADMIN_PHONE || "9555593671",
     senderEmail: process.env.GMAIL_USER || process.env.SMTP_USER || "patelroshansingh7@gmail.com",
     gmailAppPassword: process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS || "fusxcwbterwxrfnr",
@@ -71,6 +85,7 @@ export function saveEmailConfig(newConfig: Partial<NotificationSettings>): Notif
   const updated: NotificationSettings = {
     ...current,
     ...newConfig,
+    adminEmail: sanitizeAdminEmail(newConfig.adminEmail || current.adminEmail),
   };
 
   globalCache.tv_email_config = updated;

@@ -312,10 +312,14 @@ export async function sendTestEmail(targetEmail?: string) {
 
 export async function sendEnrollmentNotifications(data: EnrollmentEmailData) {
   const config = getEmailConfig();
-  const adminEmail = config.adminEmail || "patelroshansingh7@gmail.com";
+  const rawAdminEmail = config.adminEmail;
+  const adminEmail = (!rawAdminEmail || rawAdminEmail.toLowerCase().includes("techvisioncareers.com"))
+    ? "patelroshansingh7@gmail.com"
+    : rawAdminEmail;
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://techvision-careers.vercel.app";
   const paymentLink = `${appUrl}/payment/${data.orderId}`;
   const adminLink = `${appUrl}/admin`;
+  const quickApproveUrl = `${appUrl}/api/admin/quick-approve?orderId=${data.orderId}&key=tv_secret_admin_session_valid`;
 
   // 1. Student HTML Email
   const userHtml = `
@@ -373,7 +377,7 @@ export async function sendEnrollmentNotifications(data: EnrollmentEmailData) {
     </html>
   `;
 
-  // 2. Admin HTML Alert
+  // 2. Admin HTML Alert with 1-Click Verification
   const adminHtml = `
     <!DOCTYPE html>
     <html>
@@ -391,9 +395,15 @@ export async function sendEnrollmentNotifications(data: EnrollmentEmailData) {
           <p style="margin: 6px 0;"><strong>Payable Fee:</strong> ₹${data.amountINR}</p>
         </div>
 
-        <div style="text-align: center; margin-top: 24px;">
-          <a href="${adminLink}" style="display: inline-block; background: #10B981; color: #FFFFFF; font-weight: bold; font-size: 13px; padding: 10px 24px; border-radius: 8px; text-decoration: none;">
-            Open Admin Panel to Check Payment & Approve →
+        <div style="text-align: center; margin: 22px 0 8px;">
+          <a href="${quickApproveUrl}" style="display: block; width: 100%; box-sizing: border-box; background: #10B981; background: linear-gradient(135deg, #10B981, #059669); color: #FFFFFF; font-weight: 900; font-size: 14px; padding: 14px 20px; border-radius: 10px; text-decoration: none; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35); text-align: center;">
+            ⚡ 1-Click Instant Approve & Issue Certificate →
+          </a>
+        </div>
+
+        <div style="text-align: center; margin-top: 10px;">
+          <a href="${adminLink}" style="color: #94A3B8; font-size: 12px; text-decoration: underline;">
+            Open Admin Panel for Manual Review
           </a>
         </div>
       </div>
@@ -508,10 +518,14 @@ export async function sendEnrollmentNotifications(data: EnrollmentEmailData) {
 
 export async function sendPaymentProofNotifications(data: PaymentProofEmailData) {
   const config = getEmailConfig();
-  const adminEmail = config.adminEmail || "patelroshansingh7@gmail.com";
+  const rawAdminEmail = config.adminEmail;
+  const adminEmail = (!rawAdminEmail || rawAdminEmail.toLowerCase().includes("techvisioncareers.com"))
+    ? "patelroshansingh7@gmail.com"
+    : rawAdminEmail;
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://techvision-careers.vercel.app";
   const certPageLink = `${appUrl}/generate/${data.orderId}`;
   const adminLink = `${appUrl}/admin`;
+  const quickApproveUrl = `${appUrl}/api/admin/quick-approve?orderId=${data.orderId}&key=tv_secret_admin_session_valid`;
 
   // 1. Student Confirmation Email
   const userHtml = `
@@ -544,32 +558,42 @@ export async function sendPaymentProofNotifications(data: PaymentProofEmailData)
     </html>
   `;
 
-  // 2. Admin URGENT Action Alert
+  // 2. Admin URGENT Action Alert with 1-Click Verification
   const adminHtml = `
     <!DOCTYPE html>
     <html>
     <body style="font-family: Arial, sans-serif; background-color: #0F172A; color: #F8FAFC; padding: 20px;">
-      <div style="max-width: 600px; margin: 0 auto; background: #1E293B; border: 2px solid #10B981; border-radius: 12px; padding: 24px;">
-        <div style="background: #10B981; color: #064E3B; font-weight: bold; font-size: 11px; padding: 4px 10px; border-radius: 20px; display: inline-block; text-transform: uppercase;">
+      <div style="max-width: 600px; margin: 0 auto; background: #1E293B; border: 2px solid #10B981; border-radius: 16px; padding: 26px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+        <div style="background: #10B981; color: #064E3B; font-weight: bold; font-size: 11px; padding: 5px 12px; border-radius: 20px; display: inline-block; text-transform: uppercase;">
           Urgent Action Required
         </div>
         <h2 style="color: #FFFFFF; margin: 12px 0 6px; font-size: 20px;">⚡ Verify Payment for ${data.userName}</h2>
         <p style="color: #CBD5E1; font-size: 13px;">The student has uploaded payment proof for <strong>${data.courseTitle}</strong>:</p>
         
-        <div style="background: #0F172A; border-radius: 8px; padding: 16px; margin: 16px 0; font-size: 13px;">
-          <p style="margin: 4px 0;"><strong>Candidate Name:</strong> ${data.userName} (${data.userEmail})</p>
-          <p style="margin: 4px 0;"><strong>Order ID:</strong> ${data.orderId}</p>
-          <p style="margin: 4px 0;"><strong>Submitted UTR / Ref ID:</strong> <span style="color: #FDE047; font-family: monospace; font-weight: bold; font-size: 15px;">${data.utrNumber || "Uploaded as Screenshot"}</span></p>
-          <p style="margin: 4px 0;"><strong>Screenshot Proof:</strong> ${data.hasScreenshot ? "✅ Attached in Admin Dashboard" : "None"}</p>
+        <div style="background: #0F172A; border-radius: 10px; padding: 18px; margin: 16px 0; font-size: 13px; border: 1px solid #334155;">
+          <p style="margin: 5px 0;"><strong>Candidate Name:</strong> ${data.userName} (${data.userEmail})</p>
+          <p style="margin: 5px 0;"><strong>Order ID:</strong> <code style="color:#FDE047;">${data.orderId}</code></p>
+          <p style="margin: 5px 0;"><strong>Submitted UTR / Ref ID:</strong> <span style="color: #FDE047; font-family: monospace; font-weight: bold; font-size: 15px;">${data.utrNumber || "Uploaded as Screenshot"}</span></p>
+          <p style="margin: 5px 0;"><strong>Screenshot Proof:</strong> ${data.hasScreenshot ? "✅ Attached in Admin Dashboard" : "None"}</p>
         </div>
 
-        <p style="color: #E2E8F0; font-size: 13px;">
-          Please check your UPI / Bank Account for ₹149 credit. Click below to approve and immediately issue the certificate:
+        <p style="color: #E2E8F0; font-size: 13px; margin-bottom: 20px;">
+          Please check your UPI / Bank Account for ₹149 credit. Click the button below to approve and instantly issue the certificate:
         </p>
 
-        <div style="text-align: center; margin-top: 20px;">
-          <a href="${adminLink}" style="display: inline-block; background: #10B981; color: #FFFFFF; font-weight: bold; font-size: 14px; padding: 12px 28px; border-radius: 8px; text-decoration: none; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);">
-            Approve & Issue Certificate Now →
+        <!-- 1-Click Verification Button -->
+        <div style="text-align: center; margin: 25px 0 10px;">
+          <a href="${quickApproveUrl}" style="display: block; width: 100%; box-sizing: border-box; background: #10B981; background: linear-gradient(135deg, #10B981, #059669); color: #FFFFFF; font-weight: 900; font-size: 15px; padding: 16px 24px; border-radius: 12px; text-decoration: none; box-shadow: 0 6px 18px rgba(16, 185, 129, 0.4); text-align: center; letter-spacing: 0.5px;">
+            ⚡ 1-CLICK VERIFY & ISSUE CERTIFICATE NOW →
+          </a>
+        </div>
+        <p style="text-align: center; font-size: 11px; color: #94A3B8; margin: 6px 0 16px;">
+          (Clicking above immediately unlocks & issues the student certificate without login)
+        </p>
+
+        <div style="text-align: center; border-top: 1px solid #334155; padding-top: 14px;">
+          <a href="${adminLink}" style="color: #38BDF8; font-size: 12px; text-decoration: underline;">
+            🔍 Open Admin Panel for Manual Review
           </a>
         </div>
       </div>
@@ -620,6 +644,7 @@ export async function sendPaymentProofNotifications(data: PaymentProofEmailData)
       "Submitted UTR / Ref ID": data.utrNumber || "Screenshot Attached",
       "Screenshot Uploaded": data.hasScreenshot ? "Yes (Attached in Admin)" : "No",
       "Student Email": data.userEmail,
+      "1-Click Verify & Approve": quickApproveUrl,
       "Admin Approval Link": adminLink,
       "Upload Time": new Date().toLocaleString(),
     },
@@ -631,8 +656,8 @@ export async function sendPaymentProofNotifications(data: PaymentProofEmailData)
     await sendNtfyPush({
       topic: mobileTopic,
       title: `💳 Urgent: Verify ₹149 Payment from ${data.userName}!`,
-      message: `Student: ${data.userName}\nCourse: ${data.courseTitle}\nSubmitted UTR: ${data.utrNumber || "Screenshot uploaded"}\nOrder ID: ${data.orderId}\n👉 Please verify ₹149 credit in bank and approve certificate in Admin Panel.`,
-      clickUrl: `${appUrl}/admin`,
+      message: `Student: ${data.userName}\nCourse: ${data.courseTitle}\nSubmitted UTR: ${data.utrNumber || "Screenshot uploaded"}\nOrder ID: ${data.orderId}\n👉 Tap to 1-Click Verify & Issue Certificate!`,
+      clickUrl: quickApproveUrl,
       priority: "urgent",
       tags: "credit_card,moneybag,warning",
     });
@@ -646,7 +671,7 @@ export async function sendPaymentProofNotifications(data: PaymentProofEmailData)
     sendWhatsAppAlert({
       phone: targetPhone,
       apiKey: config.whatsappApiKey,
-      message: `💳 *URGENT: Verify Payment Proof!*\n\n👤 *Candidate:* ${data.userName}\n📚 *Course:* ${data.courseTitle}\n🔢 *Submitted UTR:* ${data.utrNumber || "Screenshot uploaded"}\n🆔 *Order ID:* ${data.orderId}\n\n👉 Click to verify & issue certificate: ${appUrl}/admin`,
+      message: `💳 *URGENT: Verify Payment Proof!*\n\n👤 *Candidate:* ${data.userName}\n📚 *Course:* ${data.courseTitle}\n🔢 *Submitted UTR:* ${data.utrNumber || "Screenshot uploaded"}\n🆔 *Order ID:* ${data.orderId}\n\n👉 1-Click Verify & Issue Certificate:\n${quickApproveUrl}`,
     }).catch((e) => console.error("WhatsApp error:", e));
   }
 
@@ -690,7 +715,10 @@ export async function sendCertificateIssuedNotifications({
   certNo: string;
 }) {
   const config = getEmailConfig();
-  const adminEmail = config.adminEmail || "patelroshansingh7@gmail.com";
+  const rawAdminEmail = config.adminEmail;
+  const adminEmail = (!rawAdminEmail || rawAdminEmail.toLowerCase().includes("techvisioncareers.com"))
+    ? "patelroshansingh7@gmail.com"
+    : rawAdminEmail;
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://techvision-careers.vercel.app";
   const certViewLink = `${appUrl}/generate/${orderId}`;
   const verifyLink = `${appUrl}/verify/${certNo}`;
