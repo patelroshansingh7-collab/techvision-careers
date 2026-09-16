@@ -51,10 +51,15 @@ export const CertificateActions: React.FC<CertificateActionsProps> = ({
         if (el) {
           el.style.transform = "none";
           el.style.margin = "0";
-          if (el.parentElement) {
-            el.parentElement.style.transform = "none";
-            el.parentElement.style.margin = "0";
-            el.parentElement.style.padding = "0";
+          let parent = el.parentElement;
+          while (parent && parent !== clonedDoc.body) {
+            parent.style.transform = "none";
+            parent.style.overflow = "visible";
+            parent.style.width = "auto";
+            parent.style.height = "auto";
+            parent.style.maxWidth = "none";
+            parent.style.maxHeight = "none";
+            parent = parent.parentElement;
           }
         }
       },

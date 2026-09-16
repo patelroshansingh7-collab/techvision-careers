@@ -177,21 +177,18 @@ export default function CourseDetailPage({
           </p>
         </div>
 
-        <div className="bg-slate-950 border border-slate-800 rounded-3xl p-4 sm:p-8 overflow-x-auto flex justify-center custom-scrollbar">
-          <div className="w-[1122px] origin-top scale-[0.6] sm:scale-[0.7] md:scale-[0.8] -mb-[260px] sm:-mb-[180px] md:-mb-[120px]">
-            <CertificateView
-              data={{
-                certNo: "TVC-IN-2026-0142",
-                internName: "Roshan Singh",
-                courseTitle: course.title,
-                startDate: new Date("2026-06-12"),
-                endDate: new Date("2026-07-12"),
-                mode: course.mode,
-              }}
-              scale={1}
-              containerId="course-detail-sample-cert"
-            />
-          </div>
+        <div className="bg-slate-950 border border-slate-800 rounded-3xl p-3 sm:p-8 flex justify-center overflow-hidden">
+          <CertificateView
+            data={{
+              certNo: "TVC-IN-2026-0142",
+              internName: "Roshan Singh",
+              courseTitle: course.title,
+              startDate: new Date("2026-06-12"),
+              endDate: new Date("2026-07-12"),
+              mode: course.mode,
+            }}
+            containerId="course-detail-sample-cert"
+          />
         </div>
       </section>
     </div>

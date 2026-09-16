@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Calendar, User, Award, Check } from "lucide-react";
 import { generateQrDataUrl } from "@/lib/qr";
 import { formatDate } from "@/lib/utils";
@@ -20,24 +20,78 @@ export interface CertificateData {
   qrPayload?: string;
 }
 
-interface CertificateViewProps {
+export interface CertificateViewProps {
   data: CertificateData;
   scale?: number;
   containerId?: string;
   isInteractive?: boolean;
+  autoFit?: boolean;
+  maxScale?: number;
 }
 
 export const CertificateView: React.FC<CertificateViewProps> = ({
   data,
-  scale = 1,
+  scale: explicitScale,
   containerId = "techvision-cert-node",
+  autoFit = true,
+  maxScale = 1,
 }) => {
   const [qrSrc, setQrSrc] = useState<string>("");
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState<number>(0);
 
   const formattedStart = formatDate(data.startDate);
   const formattedEnd = formatDate(data.endDate);
   const formattedIssue = formatDate(data.issueDate || data.startDate);
   const certId = data.certNo || "TVC-IN-2026-0142";
+
+  // Native certificate dimensions (A4 Landscape)
+  const CERT_WIDTH = 1122;
+  const CERT_HEIGHT = 793;
+
+  // Responsive measurement for mobile and desktop screens
+  useEffect(() => {
+    if (!autoFit) return;
+    const el = containerRef.current;
+    if (!el) return;
+
+    const measure = () => {
+      const w = el.clientWidth;
+      if (w > 0) {
+        setContainerWidth(w);
+      }
+    };
+
+    measure();
+
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const w = entry.contentRect.width || entry.target.clientWidth;
+        if (w > 0) {
+          setContainerWidth(w);
+        }
+      }
+    });
+
+    ro.observe(el);
+    window.addEventListener("resize", measure);
+
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [autoFit]);
+
+  // Compute active scale:
+  // If autoFit is active and containerWidth is measured, fit 100% of container width (capped at maxScale)
+  // Otherwise fallback to explicitScale or 1
+  const computedScale =
+    autoFit && containerWidth > 0
+      ? Math.min(maxScale, containerWidth / CERT_WIDTH)
+      : explicitScale ?? 1;
+
+  const stageWidth = Math.round(CERT_WIDTH * computedScale);
+  const stageHeight = Math.round(CERT_HEIGHT * computedScale);
 
   // Build full verifiable URL for mobile phone scanning
   const getVerificationUrl = () => {
@@ -80,13 +134,33 @@ export const CertificateView: React.FC<CertificateViewProps> = ({
 
   return (
     <div
-      style={{
-        transform: `scale(${scale})`,
-        transformOrigin: "top center",
-      }}
-      className="transition-transform duration-200"
+      ref={containerRef}
+      className="w-full flex justify-center items-center overflow-hidden"
     >
-      <div id={containerId} className="cert-canvas-card">
+      <div
+        style={{
+          width: containerWidth > 0 ? `${stageWidth}px` : "100%",
+          height: containerWidth > 0 ? `${stageHeight}px` : "auto",
+          aspectRatio: `${CERT_WIDTH} / ${CERT_HEIGHT}`,
+          maxWidth: `${CERT_WIDTH}px`,
+          position: "relative",
+          overflow: "hidden",
+          transition: "width 0.15s ease-out, height 0.15s ease-out",
+        }}
+      >
+        <div
+          style={{
+            width: `${CERT_WIDTH}px`,
+            height: `${CERT_HEIGHT}px`,
+            transform: `scale(${computedScale})`,
+            transformOrigin: "top left",
+            position: "absolute",
+            top: 0,
+            left: 0,
+            transition: "transform 0.15s ease-out",
+          }}
+        >
+          <div id={containerId} className="cert-canvas-card">
         {/* Top-Left Triangular Corners */}
         <div className="corner-tl-navy" />
         <div className="corner-tl-gold" />
@@ -322,5 +396,7 @@ export const CertificateView: React.FC<CertificateViewProps> = ({
         </div>
       </div>
     </div>
+  </div>
+</div>
   );
 };

@@ -365,31 +365,28 @@ export default function HomePage() {
               <div className="w-full bg-slate-950/90 border border-slate-800 rounded-2xl p-4 overflow-hidden flex flex-col items-center">
                 <div className="w-full flex items-center justify-between text-xs text-slate-400 pb-3 mb-3 border-b border-slate-800">
                   <span className="font-semibold text-slate-200">
-                    Live Vector Output (Scaled 60%)
+                    Live Official Verifiable A4 Credential
                   </span>
                   <span className="font-mono text-brand-gold-light">
                     ID: TVC-IN-2026-0142
                   </span>
                 </div>
 
-                {/* Scaled Certificate View Wrapper */}
-                <div className="w-full overflow-x-auto flex justify-center py-2 custom-scrollbar">
-                  <div className="w-[1122px] origin-top scale-[0.55] sm:scale-[0.62] md:scale-[0.65] -mb-[330px] sm:-mb-[280px]">
-                    <CertificateView
-                      data={{
-                        certNo: "TVC-IN-2026-0142",
-                        internName: previewName || "Roshan Singh",
-                        courseTitle: previewCourse,
-                        startDate: new Date(previewDate),
-                        endDate: new Date(
-                          new Date(previewDate).getTime() + 30 * 24 * 60 * 60 * 1000
-                        ),
-                        mode: previewMode,
-                      }}
-                      scale={1}
-                      containerId="homepage-demo-cert"
-                    />
-                  </div>
+                {/* Responsive Certificate View Wrapper */}
+                <div className="w-full flex justify-center py-2">
+                  <CertificateView
+                    data={{
+                      certNo: "TVC-IN-2026-0142",
+                      internName: previewName || "Roshan Singh",
+                      courseTitle: previewCourse,
+                      startDate: new Date(previewDate),
+                      endDate: new Date(
+                        new Date(previewDate).getTime() + 30 * 24 * 60 * 60 * 1000
+                      ),
+                      mode: previewMode,
+                    }}
+                    containerId="homepage-demo-cert"
+                  />
                 </div>
               </div>
             </div>

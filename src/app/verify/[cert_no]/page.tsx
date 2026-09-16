@@ -282,23 +282,20 @@ export default function VerifyPage({
             </span>
           </div>
 
-          <div className="w-full overflow-x-auto flex justify-center py-2 custom-scrollbar">
-            <div className="w-[1122px] origin-top scale-[0.55] sm:scale-[0.68] md:scale-[0.8] -mb-[330px] sm:-mb-[220px] md:-mb-[130px]">
-              <CertificateView
-                data={{
-                  certNo: certData.certNo,
-                  internName: certData.internName,
-                  courseTitle: certData.courseTitle,
-                  startDate: certData.startDate,
-                  endDate: certData.endDate,
-                  issueDate: certData.issuedAt,
-                  mode: certData.mode,
-                  qrPayload: certData.qrPayload,
-                }}
-                scale={1}
-                containerId="verified-certificate-stage"
-              />
-            </div>
+          <div className="w-full flex justify-center py-2">
+            <CertificateView
+              data={{
+                certNo: certData.certNo,
+                internName: certData.internName,
+                courseTitle: certData.courseTitle,
+                startDate: certData.startDate,
+                endDate: certData.endDate,
+                issueDate: certData.issuedAt,
+                mode: certData.mode,
+                qrPayload: certData.qrPayload,
+              }}
+              containerId="verified-certificate-stage"
+            />
           </div>
         </div>
       )}

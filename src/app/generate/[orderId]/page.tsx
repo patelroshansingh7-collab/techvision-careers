@@ -293,23 +293,20 @@ export default function GenerateCertificatePage({
         </div>
 
         {/* Certificate Rendering Box */}
-        <div className="w-full overflow-x-auto flex justify-center py-2 custom-scrollbar">
-          <div className="w-[1122px] origin-top scale-[0.6] sm:scale-[0.75] md:scale-[0.85] lg:scale-[0.95] -mb-[260px] sm:-mb-[160px] md:-mb-[80px] lg:-mb-[30px]">
-            <CertificateView
-              data={{
-                certNo: certData.certNo,
-                internName: certData.internName,
-                courseTitle: certData.courseTitle,
-                startDate: certData.startDate,
-                endDate: certData.endDate,
-                issueDate: certData.issuedAt,
-                mode: certData.mode,
-                qrPayload: certData.qrPayload,
-              }}
-              scale={1}
-              containerId="issued-certificate-view"
-            />
-          </div>
+        <div className="w-full flex justify-center py-2">
+          <CertificateView
+            data={{
+              certNo: certData.certNo,
+              internName: certData.internName,
+              courseTitle: certData.courseTitle,
+              startDate: certData.startDate,
+              endDate: certData.endDate,
+              issueDate: certData.issuedAt,
+              mode: certData.mode,
+              qrPayload: certData.qrPayload,
+            }}
+            containerId="issued-certificate-view"
+          />
         </div>
       </div>
     </div>
