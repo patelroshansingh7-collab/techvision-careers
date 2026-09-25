@@ -358,16 +358,13 @@ export const CertificateView: React.FC<CertificateViewProps> = ({
               </div>
             </div>
 
-            {/* Center Circular Gold Embossed Seal */}
+            {/* Center AICTE & ICAC Approved Seal */}
             <div className="center-gold-seal">
-              <div className="seal-circle-outer">
-                <div className="seal-circle-inner">
-                  <span className="seal-top-text">COMMITMENT TO</span>
-                  <span className="seal-stars">★★★</span>
-                  <span className="seal-main-word">EXCELLENCE</span>
-                  <span className="seal-flourish">❧ ☙</span>
-                </div>
-              </div>
+              <img
+                src="/assets/badges/aicte_icac_approved.png"
+                alt="AICTE & ICAC Approved"
+                className="h-[105px] w-auto object-contain select-none pointer-events-none drop-shadow-md"
+              />
             </div>
 
             {/* Right Signatory: Anjali Mehta */}
