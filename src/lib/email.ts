@@ -740,97 +740,135 @@ export async function sendCertificateIssuedNotifications({
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://techvision-careers.vercel.app";
   const certViewLink = `${appUrl}/generate/${orderId}`;
   const verifyLink = `${appUrl}/verify/${certNo}`;
+  const safeSender = (config.senderEmail || "patelroshansingh7@gmail.com").trim();
+  const cleanStudentEmail = (userEmail || "").trim().toLowerCase();
+
+  const textContent = `Dear ${userName},
+
+Congratulations!
+
+Your official Certificate of Internship Completion for ${courseTitle} at TechVision Careers has been successfully verified, generated, and registered in our public credential registry.
+
+Candidate Name: ${userName}
+Certificate ID: ${certNo}
+Internship Course: ${courseTitle}
+Organization: TechVision Careers
+Status: VERIFIED & ACTIVE (AICTE & ICAC Approved)
+
+View & Download Official Certificate (PDF):
+${certViewLink}
+
+Public Verification Page:
+${verifyLink}
+
+During the internship period, you demonstrated dedication, professionalism, and willingness to learn. We appreciate your efforts and contribution and wish you continued success in your academic and professional career.
+
+Best regards,
+TechVision Careers Administration
+Official Portal: https://techvision-careers.vercel.app
+Contact: ${safeSender}
+`;
 
   const studentHtml = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1" />
-    </head>
-    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #080D1A; color: #E2E8F0; margin: 0; padding: 24px;">
-      <div style="max-width: 600px; margin: 0 auto; background: #0E172A; border: 2px solid #C9A14A; border-radius: 20px; padding: 32px; box-shadow: 0 20px 40px rgba(0,0,0,0.5);">
-        
-        <!-- Header -->
-        <div style="text-align: center; border-bottom: 1px solid rgba(201, 161, 74, 0.3); padding-bottom: 20px; margin-bottom: 24px;">
-          <h1 style="color: #C9A14A; margin: 0; font-size: 24px; font-weight: 900; letter-spacing: 2px;">TECHVISION CAREERS</h1>
-          <p style="color: #94A3B8; font-size: 11px; margin: 4px 0 0; letter-spacing: 1.5px; text-transform: uppercase;">EMPOWERING CAREERS THROUGH TECHNOLOGY & SKILLS</p>
-        </div>
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Internship Completion Certificate - TechVision Careers</title>
+</head>
+<body style="margin: 0; padding: 20px; background-color: #F1F5F9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1E293B;">
+  <div style="max-width: 600px; margin: 0 auto; background-color: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);">
+    
+    <!-- Header Banner -->
+    <div style="background: linear-gradient(135deg, #0B132B, #1C2541); padding: 32px 24px; text-align: center; border-bottom: 3px solid #C9A14A;">
+      <h1 style="color: #C9A14A; margin: 0; font-size: 24px; font-weight: 900; letter-spacing: 2px;">TECHVISION CAREERS</h1>
+      <p style="color: #94A3B8; font-size: 11px; margin: 6px 0 0; letter-spacing: 1.5px; text-transform: uppercase;">EMPOWERING CAREERS THROUGH TECHNOLOGY & SKILLS</p>
+    </div>
 
-        <!-- Completion Badge -->
-        <div style="text-align: center; margin-bottom: 16px;">
-          <span style="display: inline-block; background: #064E3B; color: #34D399; border: 1px solid #059669; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; padding: 6px 16px; border-radius: 9999px;">
-            VERIFIED & ISSUED • AICTE & ICAC APPROVED
-          </span>
-        </div>
-
-        <h2 style="color: #FFFFFF; font-size: 22px; font-weight: 800; text-align: center; margin: 0 0 10px;">
-          🎉 Congratulations, ${userName}!
-        </h2>
-
-        <p style="color: #CBD5E1; font-size: 14px; line-height: 1.6; text-align: center; margin: 0 0 20px;">
-          Your official <strong>Certificate of Internship Completion</strong> for <strong style="color: #FDE047;">${courseTitle}</strong> has been successfully verified, generated, and registered in our public credential registry!
-        </p>
-
-        <!-- Certificate Credential Details Box -->
-        <div style="background: #090E17; border: 1px solid #1E293B; border-radius: 14px; padding: 20px; margin: 20px 0;">
-          <table style="width: 100%; font-size: 13px; color: #CBD5E1; border-collapse: collapse;">
-            <tr>
-              <td style="padding: 7px 0; color: #94A3B8;">Candidate Name:</td>
-              <td style="padding: 7px 0; text-align: right; font-weight: bold; color: #FFFFFF;">${userName}</td>
-            </tr>
-            <tr>
-              <td style="padding: 7px 0; color: #94A3B8;">Certificate ID:</td>
-              <td style="padding: 7px 0; text-align: right; font-family: monospace; font-weight: bold; color: #FDE047; font-size: 14px;">${certNo}</td>
-            </tr>
-            <tr>
-              <td style="padding: 7px 0; color: #94A3B8;">Internship Course:</td>
-              <td style="padding: 7px 0; text-align: right; font-weight: bold; color: #FFFFFF;">${courseTitle}</td>
-            </tr>
-            <tr>
-              <td style="padding: 7px 0; color: #94A3B8;">Organization:</td>
-              <td style="padding: 7px 0; text-align: right; font-weight: bold; color: #CBD5E1;">TechVision Careers</td>
-            </tr>
-            <tr>
-              <td style="padding: 7px 0; color: #94A3B8;">Verification Status:</td>
-              <td style="padding: 7px 0; text-align: right; font-weight: bold; color: #34D399;">VERIFIED & ACTIVE ✅</td>
-            </tr>
-          </table>
-        </div>
-
-        <p style="color: #94A3B8; font-size: 12px; line-height: 1.6; text-align: center; margin: 16px 0 24px;">
-          During the internship period, you demonstrated dedication, professionalism, and willingness to learn. You can now download your high-resolution A4 landscape document or share your verification link with employers.
-        </p>
-
-        <!-- CTA Action Buttons -->
-        <div style="text-align: center; margin: 24px 0 12px;">
-          <a href="${certViewLink}" style="display: block; width: 100%; box-sizing: border-box; background: linear-gradient(135deg, #C9A14A, #D4AF37); color: #0E1B47; font-weight: 900; font-size: 15px; padding: 15px 24px; border-radius: 12px; text-decoration: none; box-shadow: 0 6px 18px rgba(201, 161, 74, 0.35); text-align: center; letter-spacing: 0.5px;">
-            🎓 View & Download Official Certificate (PDF) →
-          </a>
-        </div>
-
-        <div style="text-align: center; margin-top: 14px;">
-          <a href="${verifyLink}" style="color: #60A5FA; font-size: 12px; text-decoration: underline;">
-            🔍 Public Verification Page: ${verifyLink}
-          </a>
-        </div>
-
-        <div style="text-align: center; border-top: 1px solid #1E293B; margin-top: 24px; padding-top: 16px;">
-          <p style="color: #64748B; font-size: 11px; margin: 0;">
-            🌐 TechVision Careers • www.techvisioncareers.com
-          </p>
-        </div>
+    <!-- Main Content -->
+    <div style="padding: 32px 28px;">
+      
+      <!-- Verified Badge -->
+      <div style="text-align: center; margin-bottom: 20px;">
+        <span style="display: inline-block; background-color: #ECFDF5; color: #059669; border: 1px solid #10B981; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; padding: 6px 16px; border-radius: 9999px;">
+          ✓ VERIFIED & ISSUED • AICTE & ICAC APPROVED
+        </span>
       </div>
-    </body>
-    </html>
-  `;
+
+      <h2 style="color: #0F172A; font-size: 22px; font-weight: 800; text-align: center; margin: 0 0 12px;">
+        Congratulations, ${userName}!
+      </h2>
+
+      <p style="color: #475569; font-size: 14px; line-height: 1.6; text-align: center; margin: 0 0 24px;">
+        Your official <strong>Certificate of Internship Completion</strong> for <strong style="color: #0F172A;">${courseTitle}</strong> has been successfully verified, generated, and registered in our public credential registry.
+      </p>
+
+      <!-- Details Card -->
+      <div style="background-color: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+        <table style="width: 100%; font-size: 13px; color: #334155; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 8px 0; color: #64748B; border-bottom: 1px solid #EDF2F7;">Candidate Name:</td>
+            <td style="padding: 8px 0; text-align: right; font-weight: bold; color: #0F172A; border-bottom: 1px solid #EDF2F7;">${userName}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #64748B; border-bottom: 1px solid #EDF2F7;">Certificate ID:</td>
+            <td style="padding: 8px 0; text-align: right; font-family: monospace; font-weight: bold; color: #B45309; font-size: 14px; border-bottom: 1px solid #EDF2F7;">${certNo}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #64748B; border-bottom: 1px solid #EDF2F7;">Internship Course:</td>
+            <td style="padding: 8px 0; text-align: right; font-weight: bold; color: #0F172A; border-bottom: 1px solid #EDF2F7;">${courseTitle}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #64748B; border-bottom: 1px solid #EDF2F7;">Organization:</td>
+            <td style="padding: 8px 0; text-align: right; font-weight: bold; color: #334155; border-bottom: 1px solid #EDF2F7;">TechVision Careers</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #64748B;">Verification Status:</td>
+            <td style="padding: 8px 0; text-align: right; font-weight: bold; color: #059669;">VERIFIED & ACTIVE ✓</td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- Narrative Quote -->
+      <p style="color: #64748B; font-size: 12px; line-height: 1.6; text-align: center; margin: 0 0 28px; font-style: italic;">
+        "During the internship period, the student demonstrated dedication, professionalism, willingness to learn, and active participation in assigned tasks and projects."
+      </p>
+
+      <!-- Primary Action Button -->
+      <div style="text-align: center; margin-bottom: 16px;">
+        <a href="${certViewLink}" style="display: block; width: 100%; box-sizing: border-box; background: linear-gradient(135deg, #C9A14A, #D4AF37); color: #0B132B; font-weight: 800; font-size: 15px; padding: 16px 24px; border-radius: 12px; text-decoration: none; text-align: center; box-shadow: 0 4px 14px rgba(201, 161, 74, 0.4);">
+          View & Download Official Certificate (PDF) →
+        </a>
+      </div>
+
+      <!-- Verification Link -->
+      <div style="text-align: center; margin-bottom: 24px;">
+        <a href="${verifyLink}" style="color: #2563EB; font-size: 12px; text-decoration: underline;">
+          Public Verification Registry: ${verifyLink}
+        </a>
+      </div>
+
+      <hr style="border: 0; border-top: 1px solid #E2E8F0; margin: 24px 0;" />
+
+      <!-- Footer -->
+      <div style="text-align: center;">
+        <p style="color: #94A3B8; font-size: 11px; margin: 0 0 4px;">
+          TechVision Careers • ISO 9001:2015 & AICTE / ICAC Approved
+        </p>
+        <p style="color: #94A3B8; font-size: 11px; margin: 0;">
+          Official Website: <a href="https://techvision-careers.vercel.app" style="color: #64748B;">www.techvisioncareers.com</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+`;
 
   let emailSent = false;
   let sentMessageId: string | undefined;
   let emailError: string | undefined;
-
-  const safeSender = (config.senderEmail || "patelroshansingh7@gmail.com").trim();
-  const cleanStudentEmail = (userEmail || "").trim().toLowerCase();
 
   // 1. Send via primary SMTP (Gmail)
   const transporter = getTransporter();
@@ -840,8 +878,10 @@ export async function sendCertificateIssuedNotifications({
         from: `"TechVision Careers" <${safeSender}>`,
         to: cleanStudentEmail,
         replyTo: safeSender,
-        subject: `🎓 Congratulations! Your TechVision Internship Certificate #${certNo} is Ready`,
+        subject: `TechVision Careers: Internship Completion Certificate - ${userName} (#${certNo})`,
+        text: textContent,
         html: studentHtml,
+        priority: "high",
       });
       console.log(`[Email] Certificate issued email sent to ${cleanStudentEmail}: ${info.messageId}`);
       emailSent = true;
@@ -849,28 +889,6 @@ export async function sendCertificateIssuedNotifications({
     } catch (err: any) {
       emailError = err?.message || String(err);
       console.error("[Email Error] Failed to send certificate email to student:", err);
-    }
-  }
-
-  // 2. Direct Cloud Email Relay to Student (FormSubmit - Supplementary backup)
-  if (cleanStudentEmail) {
-    try {
-      await sendEmailRelay({
-        to: cleanStudentEmail,
-        subject: `🎓 Congratulations! Your TechVision Internship Certificate #${certNo} is Ready`,
-        data: {
-          "Student Name": userName,
-          "Course / Technology": courseTitle,
-          "Certificate ID": certNo,
-          "Order ID": orderId,
-          "Verification Status": "Verified & Approved ✅",
-          "View Certificate (PDF)": certViewLink,
-          "Public Verification Link": verifyLink,
-          "Message": `Congratulations ${userName}! You have successfully completed your internship with TechVision Careers. Your official verifiable certificate #${certNo} is ready to view and download.`,
-        },
-      });
-    } catch (e) {
-      console.error("Student certificate email relay error:", e);
     }
   }
 
