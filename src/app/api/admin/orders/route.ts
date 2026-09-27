@@ -334,6 +334,40 @@ export async function POST(req: NextRequest) {
       }
 
       if (!targetOrder) {
+        try {
+          const dbEnr = await prisma.enrollment.findUnique({
+            where: { orderId },
+            include: { course: true, user: true, certificate: true },
+          });
+          if (dbEnr) {
+            targetOrder = memoryStore.registerExternalOrder({
+              orderId: dbEnr.orderId,
+              userName: dbEnr.userName,
+              userEmail: dbEnr.user?.email,
+              courseTitle: dbEnr.course?.title,
+              courseSlug: dbEnr.course?.slug,
+              college: dbEnr.college,
+              amountINR: dbEnr.amountINR,
+              utrNumber: dbEnr.utrNumber,
+              paymentScreenshot: dbEnr.paymentScreenshot,
+              paymentStatus: dbEnr.paymentStatus as any,
+            });
+            if (dbEnr.certificate) {
+              targetOrder.certificate = {
+                id: dbEnr.certificate.id,
+                certNo: dbEnr.certificate.certNo,
+                enrollmentId: dbEnr.certificate.enrollmentId,
+                pdfUrl: dbEnr.certificate.pdfUrl,
+                qrPayload: dbEnr.certificate.qrPayload,
+                issuedAt: dbEnr.certificate.issuedAt.toISOString(),
+                revoked: dbEnr.certificate.revoked,
+              };
+            }
+          }
+        } catch (e) {}
+      }
+
+      if (!targetOrder) {
         return NextResponse.json(
           { success: false, message: `Order #${orderId} not found.` },
           { status: 404 }
