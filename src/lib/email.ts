@@ -200,6 +200,9 @@ function getTransporter() {
           user: user.trim(),
           pass: pass.trim().replace(/\s+/g, ""),
         },
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 15000,
       });
     }
 
@@ -211,6 +214,9 @@ function getTransporter() {
         user: user.trim(),
         pass: pass.trim(),
       },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000,
     });
   }
   return null;
@@ -412,17 +418,20 @@ export async function sendEnrollmentNotifications(data: EnrollmentEmailData) {
   `;
 
   const transporter = getTransporter();
+  const safeSender = (config.senderEmail || "patelroshansingh7@gmail.com").trim();
+  const cleanStudentEmail = (data.userEmail || "").trim().toLowerCase();
 
   // Send to Student
-  if (transporter) {
+  if (transporter && cleanStudentEmail) {
     try {
       await transporter.sendMail({
-        from: `"TechVision Careers" <${config.senderEmail}>`,
-        to: data.userEmail,
+        from: `"TechVision Careers" <${safeSender}>`,
+        to: cleanStudentEmail,
+        replyTo: safeSender,
         subject: `🎉 Congratulations! Your Enrollment in ${data.courseTitle} is Successful — TechVision Careers`,
         html: userHtml,
       });
-      console.log(`[Email] Real student enrollment email sent to ${data.userEmail}`);
+      console.log(`[Email] Real student enrollment email sent to ${cleanStudentEmail}`);
     } catch (err) {
       console.error("[Email Error] Failed to send student email:", err);
     }
@@ -434,8 +443,9 @@ export async function sendEnrollmentNotifications(data: EnrollmentEmailData) {
   if (transporter) {
     try {
       await transporter.sendMail({
-        from: `"TechVision Portal" <${config.senderEmail}>`,
+        from: `"TechVision Portal" <${safeSender}>`,
         to: adminEmail,
+        replyTo: safeSender,
         subject: `🚨 New Enrollment: ${data.userName} enrolled in ${data.courseTitle} (Order #${data.orderId})`,
         html: adminHtml,
       });
@@ -602,17 +612,20 @@ export async function sendPaymentProofNotifications(data: PaymentProofEmailData)
   `;
 
   const transporter = getTransporter();
+  const safeSender = (config.senderEmail || "patelroshansingh7@gmail.com").trim();
+  const cleanStudentEmail = (data.userEmail || "").trim().toLowerCase();
 
   // Send Student Email
-  if (transporter) {
+  if (transporter && cleanStudentEmail) {
     try {
       await transporter.sendMail({
-        from: `"TechVision Careers" <${config.senderEmail}>`,
-        to: data.userEmail,
+        from: `"TechVision Careers" <${safeSender}>`,
+        to: cleanStudentEmail,
+        replyTo: safeSender,
         subject: `💳 Payment Details Submitted for Order #${data.orderId} — TechVision Careers`,
         html: userHtml,
       });
-      console.log(`[Email] Payment confirmation email sent to ${data.userEmail}`);
+      console.log(`[Email] Payment confirmation email sent to ${cleanStudentEmail}`);
     } catch (err) {
       console.error("[Email Error] Failed to send payment confirmation to student:", err);
     }
@@ -622,8 +635,9 @@ export async function sendPaymentProofNotifications(data: PaymentProofEmailData)
   if (transporter) {
     try {
       await transporter.sendMail({
-        from: `"TechVision Portal" <${config.senderEmail}>`,
+        from: `"TechVision Portal" <${safeSender}>`,
         to: adminEmail,
+        replyTo: safeSender,
         subject: `⚡ URGENT: Verify Payment Proof from ${data.userName} (UTR: ${data.utrNumber || 'Screenshot'})`,
         html: adminHtml,
       });
@@ -811,57 +825,75 @@ export async function sendCertificateIssuedNotifications({
     </html>
   `;
 
+  let emailSent = false;
+  let sentMessageId: string | undefined;
+  let emailError: string | undefined;
+
+  const safeSender = (config.senderEmail || "patelroshansingh7@gmail.com").trim();
+  const cleanStudentEmail = (userEmail || "").trim().toLowerCase();
+
   // 1. Send via primary SMTP (Gmail)
   const transporter = getTransporter();
-  if (transporter && userEmail) {
+  if (transporter && cleanStudentEmail) {
     try {
-      await transporter.sendMail({
-        from: `"TechVision Careers" <${config.senderEmail || "patelroshansingh7@gmail.com"}>`,
-        to: userEmail,
+      const info = await transporter.sendMail({
+        from: `"TechVision Careers" <${safeSender}>`,
+        to: cleanStudentEmail,
+        replyTo: safeSender,
         subject: `🎓 Congratulations! Your TechVision Internship Certificate #${certNo} is Ready`,
         html: studentHtml,
       });
-      console.log(`[Email] Certificate issued email sent to ${userEmail}`);
-    } catch (err) {
+      console.log(`[Email] Certificate issued email sent to ${cleanStudentEmail}: ${info.messageId}`);
+      emailSent = true;
+      sentMessageId = info.messageId;
+    } catch (err: any) {
+      emailError = err?.message || String(err);
       console.error("[Email Error] Failed to send certificate email to student:", err);
     }
   }
 
-  // 2. Direct Cloud Email Relay to Student (FormSubmit - Guaranteed delivery)
-  if (userEmail) {
-    sendEmailRelay({
-      to: userEmail,
-      subject: `🎓 Congratulations! Your TechVision Internship Certificate #${certNo} is Ready`,
-      data: {
-        "Student Name": userName,
-        "Course / Technology": courseTitle,
-        "Certificate ID": certNo,
-        "Order ID": orderId,
-        "Verification Status": "Verified & Approved ✅",
-        "View Certificate (PDF)": certViewLink,
-        "Public Verification Link": verifyLink,
-        "Message": `Congratulations ${userName}! You have successfully completed your internship with TechVision Careers. Your official verifiable certificate #${certNo} is ready to view and download.`,
-      },
-    }).catch((e) => console.error("Student certificate email relay error:", e));
+  // 2. Direct Cloud Email Relay to Student (FormSubmit - Supplementary backup)
+  if (cleanStudentEmail) {
+    try {
+      await sendEmailRelay({
+        to: cleanStudentEmail,
+        subject: `🎓 Congratulations! Your TechVision Internship Certificate #${certNo} is Ready`,
+        data: {
+          "Student Name": userName,
+          "Course / Technology": courseTitle,
+          "Certificate ID": certNo,
+          "Order ID": orderId,
+          "Verification Status": "Verified & Approved ✅",
+          "View Certificate (PDF)": certViewLink,
+          "Public Verification Link": verifyLink,
+          "Message": `Congratulations ${userName}! You have successfully completed your internship with TechVision Careers. Your official verifiable certificate #${certNo} is ready to view and download.`,
+        },
+      });
+    } catch (e) {
+      console.error("Student certificate email relay error:", e);
+    }
   }
 
   // 3. Admin Notification Alert
   if (transporter && adminEmail) {
     try {
       await transporter.sendMail({
-        from: `"TechVision Portal" <${config.senderEmail || "patelroshansingh7@gmail.com"}>`,
+        from: `"TechVision Portal" <${safeSender}>`,
         to: adminEmail,
+        replyTo: safeSender,
         subject: `✅ Certificate Issued: ${userName} (#${certNo})`,
         html: `
           <div style="font-family: Arial, sans-serif; background: #0E1B47; color: #FFFFFF; padding: 24px; border-radius: 12px; max-width: 500px; margin: 0 auto; border: 1px solid #10B981;">
             <h3 style="color: #10B981; margin-top: 0;">✅ Certificate Generated Successfully</h3>
             <p>Certificate <strong>#${certNo}</strong> has been generated and unlocked for student <strong>${userName}</strong>.</p>
             <p>Order: <code>#${orderId}</code></p>
-            <p>Student Email: ${userEmail}</p>
+            <p>Student Email: ${cleanStudentEmail}</p>
             <p><a href="${certViewLink}" style="color: #FDE047;">View Issued Certificate</a></p>
           </div>
         `,
       });
     } catch (err) {}
   }
+
+  return { success: emailSent, messageId: sentMessageId, error: emailError };
 }

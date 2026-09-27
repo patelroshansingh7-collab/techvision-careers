@@ -126,16 +126,20 @@ export async function GET(req: NextRequest) {
     } catch (e) {}
 
     // Send certificate issued email notification to student
-    if (certNo) {
-      sendCertificateIssuedNotifications({
-        userName: enr.userName,
-        userEmail: enr.userEmail,
-        courseTitle: enr.course.title,
-        orderId: enr.orderId,
-        certNo,
-        startDate: enr.startDate,
-        endDate: enr.endDate,
-      }).catch((e) => console.error("Student cert email error:", e));
+    if (certNo && enr.userEmail) {
+      try {
+        await sendCertificateIssuedNotifications({
+          userName: enr.userName,
+          userEmail: enr.userEmail,
+          courseTitle: enr.course.title,
+          orderId: enr.orderId,
+          certNo,
+          startDate: enr.startDate,
+          endDate: enr.endDate,
+        });
+      } catch (e) {
+        console.error("Student cert email error:", e);
+      }
     }
 
     // Sync state to cloud bins

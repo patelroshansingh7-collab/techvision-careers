@@ -150,6 +150,22 @@ export async function POST(req: NextRequest) {
         issueCertificate: body.issueCertificate ?? true,
       });
 
+      if (newEnr.certificate && newEnr.userEmail) {
+        try {
+          await sendCertificateIssuedNotifications({
+            userName: newEnr.userName,
+            userEmail: newEnr.userEmail,
+            courseTitle: newEnr.course?.title || "Engineering Internship Course",
+            orderId: newEnr.orderId,
+            certNo: newEnr.certificate.certNo,
+            startDate: newEnr.startDate,
+            endDate: newEnr.endDate,
+          });
+        } catch (e) {
+          console.error("Direct add student cert email error:", e);
+        }
+      }
+
       await memoryStore.syncToCloud().catch(() => {});
 
       return NextResponse.json({
@@ -273,23 +289,74 @@ export async function POST(req: NextRequest) {
       await memoryStore.syncToCloud().catch(() => {});
 
       // 7. Send certificate ready email notification to student & admin
-      if (memEnr && memEnr.userEmail && certNo) {
-        sendCertificateIssuedNotifications({
-          userName: memEnr.userName,
-          userEmail: memEnr.userEmail,
-          courseTitle: memEnr.course?.title || "Engineering Internship Course",
-          orderId: memEnr.orderId,
-          certNo,
-          startDate: memEnr.startDate,
-          endDate: memEnr.endDate,
-        }).catch((e) => console.error("Async cert email error:", e));
+      let emailResult = { success: false, messageId: undefined as string | undefined, error: undefined as string | undefined };
+      const studentEmail = memEnr?.userEmail || incomingOrder?.user?.email || incomingOrder?.userEmail;
+      if (memEnr && studentEmail && certNo) {
+        try {
+          emailResult = await sendCertificateIssuedNotifications({
+            userName: memEnr.userName,
+            userEmail: studentEmail,
+            courseTitle: memEnr.course?.title || "Engineering Internship Course",
+            orderId: memEnr.orderId,
+            certNo,
+            startDate: memEnr.startDate,
+            endDate: memEnr.endDate,
+          });
+        } catch (e: any) {
+          console.error("Certificate issued email error:", e);
+        }
       }
 
       return NextResponse.json({
         success: true,
-        message: `Order #${orderId} verified and Certificate #${certNo} generated successfully!`,
+        message: `Order #${orderId} verified and Certificate #${certNo} generated successfully!${
+          emailResult.success ? ` Official email sent to ${studentEmail}.` : ""
+        }`,
         certNo,
         order: memEnr,
+        emailSent: emailResult.success,
+      });
+    }
+
+    // 5. Resend Certificate Email to Student
+    if (action === "RESEND_EMAIL" || action === "SEND_CERTIFICATE_EMAIL") {
+      let targetOrder = memoryStore.getEnrollmentByOrderId(orderId);
+      if (!targetOrder) {
+        const all = memoryStore.getAllEnrollments();
+        targetOrder = all.find((e) => e.orderId.toLowerCase() === (orderId || "").toLowerCase());
+      }
+
+      if (!targetOrder) {
+        return NextResponse.json(
+          { success: false, message: `Order #${orderId} not found.` },
+          { status: 404 }
+        );
+      }
+
+      const certNo = targetOrder.certificate?.certNo;
+      if (!certNo) {
+        return NextResponse.json(
+          { success: false, message: `No certificate found for Order #${orderId}. Please approve order first.` },
+          { status: 400 }
+        );
+      }
+
+      const emailResult = await sendCertificateIssuedNotifications({
+        userName: targetOrder.userName,
+        userEmail: targetOrder.userEmail,
+        courseTitle: targetOrder.course?.title || "Engineering Internship Course",
+        orderId: targetOrder.orderId,
+        certNo,
+        startDate: targetOrder.startDate,
+        endDate: targetOrder.endDate,
+      });
+
+      return NextResponse.json({
+        success: emailResult.success,
+        message: emailResult.success
+          ? `Certificate email successfully delivered to ${targetOrder.userEmail}!`
+          : `Failed to deliver email: ${emailResult.error || "Unknown error"}`,
+        emailResult,
       });
     }
 

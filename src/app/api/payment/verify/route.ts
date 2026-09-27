@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { generateCertNo } from "@/lib/cert-id";
 import { memoryStore } from "@/lib/store";
-import { sendPaymentProofNotifications } from "@/lib/email";
+import { sendPaymentProofNotifications, sendCertificateIssuedNotifications } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
 
@@ -95,6 +95,22 @@ export async function POST(req: NextRequest) {
                 qrPayload: `https://techvision-careers.vercel.app/verify/${certNo}`,
               },
             });
+          }
+
+          if (certificate && studentEmail) {
+            try {
+              await sendCertificateIssuedNotifications({
+                userName: studentName || "Student",
+                userEmail: studentEmail,
+                courseTitle: finalCourseTitle || "Internship Course",
+                orderId,
+                certNo: certificate.certNo,
+                startDate: updatedEnrollment.startDate,
+                endDate: updatedEnrollment.endDate,
+              });
+            } catch (e) {
+              console.error("Async cert email error:", e);
+            }
           }
 
           return NextResponse.json({

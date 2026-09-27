@@ -98,6 +98,7 @@ export default function AdminDashboardPage() {
   const [newStudentStatus, setNewStudentStatus] = useState<"PAID" | "PENDING">("PAID");
   const [newStudentUtr, setNewStudentUtr] = useState("");
   const [creatingStudent, setCreatingStudent] = useState(false);
+  const [resendingEmailId, setResendingEmailId] = useState<string | null>(null);
 
   // Web Audio Chime Synthesizer
   const playNotificationSound = () => {
@@ -455,6 +456,34 @@ export default function AdminDashboardPage() {
       }
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleResendEmail = async (orderId: string) => {
+    try {
+      setResendingEmailId(orderId);
+      const res = await fetch("/api/admin/orders", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-key": "tv_secret_admin_session_valid",
+        },
+        body: JSON.stringify({
+          orderId,
+          action: "RESEND_EMAIL",
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setActionMessage(data.message || "Certificate email successfully sent to student!");
+        setTimeout(() => setActionMessage(null), 5000);
+      } else {
+        alert(data.message || "Failed to send email");
+      }
+    } catch (err: any) {
+      alert("Error sending email: " + err.message);
+    } finally {
+      setResendingEmailId(null);
     }
   };
 
@@ -1433,6 +1462,22 @@ export default function AdminDashboardPage() {
                           <Download className="w-3 h-3" />
                           <span>View & Download PDF</span>
                         </Link>
+                      )}
+
+                      {cert && (
+                        <button
+                          onClick={() => handleResendEmail(order.orderId)}
+                          disabled={resendingEmailId === order.orderId}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 rounded-lg text-[11px] font-bold transition cursor-pointer"
+                          title={`Resend Certificate Completion Email to ${order.user?.email || order.userEmail}`}
+                        >
+                          {resendingEmailId === order.orderId ? (
+                            <Loader2 className="w-3 h-3 animate-spin text-amber-300" />
+                          ) : (
+                            <Mail className="w-3 h-3 text-amber-300" />
+                          )}
+                          <span>{resendingEmailId === order.orderId ? "Sending..." : "Email Student"}</span>
+                        </button>
                       )}
 
                       {!isPaid && (
