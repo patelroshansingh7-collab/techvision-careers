@@ -160,6 +160,7 @@ export async function POST(req: NextRequest) {
             certNo: newEnr.certificate.certNo,
             startDate: newEnr.startDate,
             endDate: newEnr.endDate,
+            notifyAdmin: false,
           });
         } catch (e) {
           console.error("Direct add student cert email error:", e);
@@ -288,8 +289,13 @@ export async function POST(req: NextRequest) {
       // 6. Sync updated certificate immediately to cloud storage
       await memoryStore.syncToCloud().catch(() => {});
 
-      // 7. Send certificate ready email notification to student & admin
-      let emailResult = { success: false, messageId: undefined as string | undefined, error: undefined as string | undefined };
+      // 7. Send certificate ready email notification directly to student (no admin spam)
+      let emailResult: { success: boolean; recipient?: string; messageId?: string; error?: string } = {
+        success: false,
+        recipient: undefined,
+        messageId: undefined,
+        error: undefined,
+      };
       const studentEmail = memEnr?.userEmail || incomingOrder?.user?.email || incomingOrder?.userEmail;
       if (memEnr && studentEmail && certNo) {
         try {
@@ -301,6 +307,7 @@ export async function POST(req: NextRequest) {
             certNo,
             startDate: memEnr.startDate,
             endDate: memEnr.endDate,
+            notifyAdmin: false,
           });
         } catch (e: any) {
           console.error("Certificate issued email error:", e);
@@ -310,7 +317,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         success: true,
         message: `Order #${orderId} verified and Certificate #${certNo} generated successfully!${
-          emailResult.success ? ` Official email sent to ${studentEmail}.` : ""
+          emailResult.success ? ` Official email delivered to student (${studentEmail}).` : ""
         }`,
         certNo,
         order: memEnr,
@@ -341,21 +348,38 @@ export async function POST(req: NextRequest) {
         );
       }
 
+      // Check if admin provided an updated or test recipient email
+      const customRecipient = typeof body.recipientEmail === "string" ? body.recipientEmail.trim() : "";
+      const targetEmail = customRecipient || targetOrder.userEmail;
+
+      if (customRecipient && customRecipient.toLowerCase() !== targetOrder.userEmail?.toLowerCase()) {
+        targetOrder.userEmail = customRecipient;
+        try {
+          await prisma.enrollment.update({
+            where: { orderId: targetOrder.orderId },
+            data: { user: { update: { email: customRecipient } } },
+          });
+        } catch (e) {}
+        await memoryStore.syncToCloud().catch(() => {});
+      }
+
       const emailResult = await sendCertificateIssuedNotifications({
         userName: targetOrder.userName,
-        userEmail: targetOrder.userEmail,
+        userEmail: targetEmail,
         courseTitle: targetOrder.course?.title || "Engineering Internship Course",
         orderId: targetOrder.orderId,
         certNo,
         startDate: targetOrder.startDate,
         endDate: targetOrder.endDate,
+        notifyAdmin: false,
       });
 
       return NextResponse.json({
         success: emailResult.success,
+        recipient: targetEmail,
         message: emailResult.success
-          ? `Certificate email successfully delivered to ${targetOrder.userEmail}!`
-          : `Failed to deliver email: ${emailResult.error || "Unknown error"}`,
+          ? `Certificate email successfully delivered to student mailbox: ${targetEmail}! (Delivered to student, not admin).`
+          : `Failed to deliver email to ${targetEmail}: ${emailResult.error || "Unknown error"}`,
         emailResult,
       });
     }

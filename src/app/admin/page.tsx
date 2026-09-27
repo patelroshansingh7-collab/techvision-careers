@@ -100,6 +100,11 @@ export default function AdminDashboardPage() {
   const [creatingStudent, setCreatingStudent] = useState(false);
   const [resendingEmailId, setResendingEmailId] = useState<string | null>(null);
 
+  // Modal State for Sending Email to Student
+  const [emailModalOrder, setEmailModalOrder] = useState<any | null>(null);
+  const [targetStudentEmail, setTargetStudentEmail] = useState("");
+  const [sendingCustomEmail, setSendingCustomEmail] = useState(false);
+
   // Web Audio Chime Synthesizer
   const playNotificationSound = () => {
     if (!soundEnabled || typeof window === "undefined") return;
@@ -459,9 +464,22 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const handleResendEmail = async (orderId: string) => {
+  const handleOpenEmailModal = (order: any) => {
+    setEmailModalOrder(order);
+    setTargetStudentEmail(order.user?.email || order.userEmail || "");
+  };
+
+  const handleSendStudentEmail = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!emailModalOrder) return;
+    const cleanTargetEmail = targetStudentEmail.trim();
+    if (!cleanTargetEmail || !cleanTargetEmail.includes("@") || cleanTargetEmail.endsWith("@example.com")) {
+      alert("Kripya ek valid student email address enter karein (jaise aapka email ya student ka Gmail).");
+      return;
+    }
+
+    setSendingCustomEmail(true);
     try {
-      setResendingEmailId(orderId);
       const res = await fetch("/api/admin/orders", {
         method: "POST",
         headers: {
@@ -469,21 +487,38 @@ export default function AdminDashboardPage() {
           "x-admin-key": "tv_secret_admin_session_valid",
         },
         body: JSON.stringify({
-          orderId,
+          orderId: emailModalOrder.orderId,
           action: "RESEND_EMAIL",
+          recipientEmail: cleanTargetEmail,
         }),
       });
       const data = await res.json();
       if (data.success) {
-        setActionMessage(data.message || "Certificate email successfully sent to student!");
-        setTimeout(() => setActionMessage(null), 5000);
+        setActionMessage(data.message || `Certificate email successfully delivered to ${cleanTargetEmail}!`);
+        // Update local order email if modified
+        setOrders((prev) =>
+          prev.map((o) =>
+            o.orderId === emailModalOrder.orderId
+              ? { ...o, userEmail: cleanTargetEmail, user: { ...(o.user || {}), email: cleanTargetEmail } }
+              : o
+          )
+        );
+        setEmailModalOrder(null);
+        setTimeout(() => setActionMessage(null), 8000);
       } else {
         alert(data.message || "Failed to send email");
       }
     } catch (err: any) {
       alert("Error sending email: " + err.message);
     } finally {
-      setResendingEmailId(null);
+      setSendingCustomEmail(false);
+    }
+  };
+
+  const handleResendEmail = async (orderId: string) => {
+    const target = orders.find((o) => o.orderId === orderId);
+    if (target) {
+      handleOpenEmailModal(target);
     }
   };
 
@@ -1466,17 +1501,12 @@ export default function AdminDashboardPage() {
 
                       {cert && (
                         <button
-                          onClick={() => handleResendEmail(order.orderId)}
-                          disabled={resendingEmailId === order.orderId}
+                          onClick={() => handleOpenEmailModal(order)}
                           className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 rounded-lg text-[11px] font-bold transition cursor-pointer"
-                          title={`Resend Certificate Completion Email to ${order.user?.email || order.userEmail}`}
+                          title={`Email Certificate directly to student (${order.user?.email || order.userEmail})`}
                         >
-                          {resendingEmailId === order.orderId ? (
-                            <Loader2 className="w-3 h-3 animate-spin text-amber-300" />
-                          ) : (
-                            <Mail className="w-3 h-3 text-amber-300" />
-                          )}
-                          <span>{resendingEmailId === order.orderId ? "Sending..." : "Email Student"}</span>
+                          <Mail className="w-3 h-3 text-amber-300" />
+                          <span>Email Student</span>
                         </button>
                       )}
 
@@ -1747,6 +1777,108 @@ export default function AdminDashboardPage() {
                     <>
                       <Check className="w-3.5 h-3.5 stroke-[3]" />
                       <span>Save & Issue Certificate</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          MODAL: SEND CERTIFICATE EMAIL DIRECTLY TO STUDENT
+          ========================================================================= */}
+      {emailModalOrder && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-7 max-w-lg w-full space-y-5 shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
+            <button
+              onClick={() => setEmailModalOrder(null)}
+              className="absolute top-4 right-4 p-2 rounded-full bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                <Mail className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white">
+                  Send Certificate to Student (छात्र को ईमेल भेजें)
+                </h3>
+                <p className="text-xs text-slate-400">
+                  Direct official email delivery with AICTE/ICAC approved credentials.
+                </p>
+              </div>
+            </div>
+
+            {/* Candidate Summary Card */}
+            <div className="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-4 space-y-2 text-xs">
+              <div className="flex justify-between items-center">
+                <span className="text-slate-400">Candidate Name:</span>
+                <span className="font-bold text-white text-sm">{emailModalOrder.userName}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-400">Certificate ID:</span>
+                <span className="font-mono font-bold text-amber-400">{emailModalOrder.certificate?.certNo}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-400">Course / Technology:</span>
+                <span className="font-medium text-slate-300">{emailModalOrder.course?.title || "Engineering Internship Course"}</span>
+              </div>
+            </div>
+
+            <form onSubmit={handleSendStudentEmail} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider block">
+                  Student Recipient Email (छात्र का ईमेल) <span className="text-rose-400">*</span>
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={targetStudentEmail}
+                  onChange={(e) => setTargetStudentEmail(e.target.value)}
+                  placeholder="e.g. student@gmail.com"
+                  className="w-full bg-slate-950 border border-slate-700 focus:border-amber-400 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 outline-none transition font-medium"
+                />
+              </div>
+
+              {/* Informative Explanation in Hindi/English */}
+              <div className="bg-amber-950/30 border border-amber-500/20 rounded-xl p-3.5 space-y-1.5 text-[11px] text-amber-200/90 leading-relaxed">
+                <p className="font-semibold text-amber-300 flex items-center gap-1.5">
+                  <span>ℹ️</span> <span>Email Delivery Notice:</span>
+                </p>
+                <p>
+                  Yeh official certificate email <strong>seedhe upar dale gaye student email</strong> ke mailbox par deliver hoga (Admin ke email par alert nahi aayega).
+                </p>
+                <p className="text-slate-300">
+                  💡 <strong>Test Delivery:</strong> Agar aap apne doosre mobile par check karna chahte hain, toh yahan apna email daal kar Send karein.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEmailModalOrder(null)}
+                  className="py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={sendingCustomEmail}
+                  className="flex-1 py-2.5 px-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs rounded-xl shadow-lg shadow-amber-500/20 transition disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
+                >
+                  {sendingCustomEmail ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Delivering Certificate Email...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-3.5 h-3.5" />
+                      <span>Send Certificate Now (ईमेल भेजें)</span>
                     </>
                   )}
                 </button>

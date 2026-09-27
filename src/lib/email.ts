@@ -723,6 +723,7 @@ export async function sendCertificateIssuedNotifications({
   certNo,
   startDate,
   endDate,
+  notifyAdmin = false,
 }: {
   userName: string;
   userEmail: string;
@@ -731,6 +732,7 @@ export async function sendCertificateIssuedNotifications({
   certNo: string;
   startDate?: string | Date;
   endDate?: string | Date;
+  notifyAdmin?: boolean;
 }) {
   const config = getEmailConfig();
   const rawAdminEmail = config.adminEmail;
@@ -742,6 +744,17 @@ export async function sendCertificateIssuedNotifications({
   const verifyLink = `${appUrl}/verify/${certNo}`;
   const safeSender = (config.senderEmail || "patelroshansingh7@gmail.com").trim();
   const cleanStudentEmail = (userEmail || "").trim().toLowerCase();
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!cleanStudentEmail || !emailRegex.test(cleanStudentEmail) || cleanStudentEmail.endsWith("@example.com")) {
+    console.warn(`[Email Warning] Invalid or placeholder student email: "${cleanStudentEmail}". Email dispatch aborted.`);
+    return {
+      success: false,
+      recipient: cleanStudentEmail,
+      messageId: undefined as string | undefined,
+      error: `Invalid or placeholder student email: "${cleanStudentEmail}". Please update with a valid email.`,
+    };
+  }
 
   const textContent = `Dear ${userName},
 
@@ -892,8 +905,8 @@ Contact: ${safeSender}
     }
   }
 
-  // 3. Admin Notification Alert
-  if (transporter && adminEmail) {
+  // 3. Admin Notification Alert (Only if explicitly requested and admin is not the student)
+  if (notifyAdmin && transporter && adminEmail && adminEmail.toLowerCase() !== cleanStudentEmail) {
     try {
       await transporter.sendMail({
         from: `"TechVision Portal" <${safeSender}>`,
@@ -913,5 +926,5 @@ Contact: ${safeSender}
     } catch (err) {}
   }
 
-  return { success: emailSent, messageId: sentMessageId, error: emailError };
+  return { success: emailSent, recipient: cleanStudentEmail, messageId: sentMessageId, error: emailError };
 }
