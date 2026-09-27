@@ -316,14 +316,14 @@ body {
   margin-top: 4px;
 }
 .cert-canvas-card .gold-divider-bar {
-  width: 100px;
+  width: 70px;
   height: 1.5px;
   background: #C9A14A;
 }
 .cert-canvas-card .cert-sub-text {
-  font-size: 0.9rem;
+  font-size: 0.82rem;
   font-weight: 800;
-  letter-spacing: 3.5px;
+  letter-spacing: 2.4px;
   color: #C9A14A;
   text-transform: uppercase;
 }
@@ -434,17 +434,17 @@ body {
   margin: 4px 0;
   letter-spacing: 0.5px;
 }
-.cert-canvas-card .narrative-details-line {
-  font-size: 0.8rem;
-  color: #475569;
-  line-height: 1.45;
-  margin: 4px 0;
+.cert-canvas-card .narrative-company-line {
+  font-size: 0.82rem;
+  color: #334155;
+  margin: 1px 0 3px;
+  font-weight: 500;
 }
-.cert-canvas-card .narrative-best-wishes {
-  font-size: 0.76rem;
-  color: #64748B;
-  font-style: italic;
-  margin-top: 5px;
+.cert-canvas-card .narrative-details-line {
+  font-size: 0.77rem;
+  color: #475569;
+  line-height: 1.38;
+  margin: 3px 0;
 }
 
 /* Right Column: Verified Shield + QR */
@@ -539,6 +539,14 @@ body {
   font-size: 0.68rem;
   color: #64748B;
   font-weight: 600;
+}
+.cert-canvas-card .sig-authorized-tag {
+  font-size: 0.55rem;
+  font-weight: 700;
+  color: #94A3B8;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  margin-top: 1px;
 }
 
 /* Center Circular Gold Embossed Seal */

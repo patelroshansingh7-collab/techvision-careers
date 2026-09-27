@@ -196,7 +196,7 @@ export const CertificateView: React.FC<CertificateViewProps> = ({
             </div>
             <div className="brand-title-wrap">
               <div className="brand-main-spelling">
-                <span className="brand-navy-txt">TECHVISON</span>
+                <span className="brand-navy-txt">TECHVISION</span>
                 <span className="brand-gold-txt">CAREERS</span>
               </div>
               <span className="brand-sub-tagline">
@@ -210,7 +210,7 @@ export const CertificateView: React.FC<CertificateViewProps> = ({
             <h1 className="cert-heading-main">CERTIFICATE</h1>
             <div className="cert-sub-divider">
               <span className="gold-divider-bar" />
-              <span className="cert-sub-text">OF INTERNSHIP</span>
+              <span className="cert-sub-text">OF INTERNSHIP COMPLETION</span>
               <span className="gold-divider-bar" />
             </div>
             <p className="certify-statement">This is to certify that</p>
@@ -285,22 +285,20 @@ export const CertificateView: React.FC<CertificateViewProps> = ({
 
             {/* Center Narrative Paragraph */}
             <div className="cert-center-narrative">
-              <p className="narrative-line-1" style={{ wordSpacing: "3px" }}>
-                has successfully completed the Internship Program in
+              <p className="narrative-line-1" style={{ wordSpacing: "2px" }}>
+                has successfully completed the internship program in
               </p>
-              <div className="narrative-course-highlight" style={{ wordSpacing: "3px" }}>
+              <div className="narrative-course-highlight" style={{ wordSpacing: "2.5px" }}>
                 {data.courseTitle || "Full-Stack Web Development"}
               </div>
-              <p className="narrative-details-line" style={{ wordSpacing: "2.5px" }}>
-                conducted by <strong>TechVision Careers</strong> from{" "}
-                <strong>{formattedStart}</strong> to <strong>{formattedEnd}</strong>.
+              <p className="narrative-company-line" style={{ wordSpacing: "2px" }}>
+                at <strong>TechVision Careers</strong>.
               </p>
-              <p className="narrative-details-line" style={{ wordSpacing: "2.5px" }}>
-                During this internship, <strong>{data.internName || "Roshan Singh"}</strong>{" "}
-                demonstrated commendable technical proficiency, dedication, and problem-solving skills.
+              <p className="narrative-details-line" style={{ wordSpacing: "1.5px" }}>
+                During the internship period, the student demonstrated dedication, professionalism, willingness to learn, and active participation in assigned tasks and projects.
               </p>
-              <p className="narrative-best-wishes" style={{ wordSpacing: "2px" }}>
-                We wish them all the best in their future career endeavors.
+              <p className="narrative-details-line" style={{ wordSpacing: "1.5px" }}>
+                The internship was successfully completed from <strong>{formattedStart}</strong> to <strong>{formattedEnd}</strong>. We appreciate the student’s efforts and contribution during the internship and wish them continued success in their academic and professional career.
               </p>
             </div>
 
@@ -333,7 +331,7 @@ export const CertificateView: React.FC<CertificateViewProps> = ({
                 )}
               </a>
               <span className="scan-verify-note">
-                Scan to Verify<br />Authenticity
+                Scan to Verify<br />Certificate
               </span>
             </div>
           </div>
@@ -355,6 +353,9 @@ export const CertificateView: React.FC<CertificateViewProps> = ({
               </div>
               <div className="sig-person-title">
                 {data.mentorTitle || "Program Director"}
+              </div>
+              <div className="sig-authorized-tag">
+                Authorized Signatory
               </div>
             </div>
 
@@ -382,6 +383,9 @@ export const CertificateView: React.FC<CertificateViewProps> = ({
               </div>
               <div className="sig-person-title">
                 {data.directorTitle || "Head of Operations"}
+              </div>
+              <div className="sig-authorized-tag">
+                Authorized Signatory
               </div>
             </div>
           </div>

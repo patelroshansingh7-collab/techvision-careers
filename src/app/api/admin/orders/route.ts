@@ -280,6 +280,8 @@ export async function POST(req: NextRequest) {
           courseTitle: memEnr.course?.title || "Engineering Internship Course",
           orderId: memEnr.orderId,
           certNo,
+          startDate: memEnr.startDate,
+          endDate: memEnr.endDate,
         }).catch((e) => console.error("Async cert email error:", e));
       }
 

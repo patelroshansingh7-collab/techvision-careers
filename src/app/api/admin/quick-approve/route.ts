@@ -133,6 +133,8 @@ export async function GET(req: NextRequest) {
         courseTitle: enr.course.title,
         orderId: enr.orderId,
         certNo,
+        startDate: enr.startDate,
+        endDate: enr.endDate,
       }).catch((e) => console.error("Student cert email error:", e));
     }
 
