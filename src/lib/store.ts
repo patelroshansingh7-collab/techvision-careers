@@ -178,12 +178,47 @@ export async function syncFromCloud(force = false): Promise<boolean> {
 
 export async function syncToCloud(): Promise<boolean> {
   try {
-    // Ensure all official pre-seeded enrollments are always in the map
+    // 1. Ensure all official pre-seeded enrollments are always in the map
     for (const off of OFFICIAL_ISSUED_ENROLLMENTS) {
       if (!globalStore.tv_enrollments.has(off.orderId)) {
         globalStore.tv_enrollments.set(off.orderId, off);
       }
     }
+
+    // 2. Fetch remote and merge before upload so no new student enrollments are ever lost
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 2000);
+      const res = await fetch(PRIMARY_CLOUD_BIN, {
+        signal: controller.signal,
+        headers: { "Cache-Control": "no-cache" },
+      });
+      clearTimeout(timeout);
+      if (res.ok) {
+        const remote = await res.json();
+        if (remote && Array.isArray(remote.enrollments)) {
+          for (const item of remote.enrollments) {
+            if (!item || !item.orderId) continue;
+            const existing = globalStore.tv_enrollments.get(item.orderId);
+            if (!existing) {
+              globalStore.tv_enrollments.set(item.orderId, item);
+            } else {
+              if (!existing.certificate && item.certificate) {
+                existing.certificate = item.certificate;
+              }
+              if (existing.paymentStatus !== "PAID" && item.paymentStatus === "PAID") {
+                existing.paymentStatus = "PAID";
+              }
+              if (!existing.utrNumber && item.utrNumber) existing.utrNumber = item.utrNumber;
+              if (!existing.paymentScreenshot && item.paymentScreenshot) existing.paymentScreenshot = item.paymentScreenshot;
+            }
+          }
+        }
+      }
+    } catch (e) {
+      // Non-blocking merge error, proceed with local map
+    }
+
     saveToDisk(globalStore.tv_enrollments);
     const list = Array.from(globalStore.tv_enrollments.values());
     const emailConfig = getEmailConfig();
