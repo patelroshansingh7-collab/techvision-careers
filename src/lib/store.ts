@@ -4,6 +4,7 @@ import path from "path";
 import { ENGINEERING_COURSES } from "./courses-data";
 import { generateCertNo, generateOrderId } from "./cert-id";
 import { getEmailConfig, saveEmailConfig } from "./email-config";
+import { OFFICIAL_ISSUED_ENROLLMENTS } from "./ledger-data";
 
 export interface StoredEnrollment {
   id: string;
@@ -117,7 +118,7 @@ export async function syncFromCloud(force = false): Promise<boolean> {
     return true;
   }
 
-  const fetchWithTimeout = async (url: string, ms = 9000) => {
+  const fetchWithTimeout = async (url: string, ms = 3500) => {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), ms);
     try {
@@ -177,6 +178,12 @@ export async function syncFromCloud(force = false): Promise<boolean> {
 
 export async function syncToCloud(): Promise<boolean> {
   try {
+    // Ensure all official pre-seeded enrollments are always in the map
+    for (const off of OFFICIAL_ISSUED_ENROLLMENTS) {
+      if (!globalStore.tv_enrollments.has(off.orderId)) {
+        globalStore.tv_enrollments.set(off.orderId, off);
+      }
+    }
     saveToDisk(globalStore.tv_enrollments);
     const list = Array.from(globalStore.tv_enrollments.values());
     const emailConfig = getEmailConfig();
@@ -187,7 +194,7 @@ export async function syncToCloud(): Promise<boolean> {
       notificationConfig: emailConfig,
     });
 
-    const putWithTimeout = async (url: string, ms = 9000) => {
+    const putWithTimeout = async (url: string, ms = 4000) => {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), ms);
       try {
@@ -223,191 +230,10 @@ export async function syncToCloud(): Promise<boolean> {
 if (!globalStore.tv_enrollments) {
   globalStore.tv_enrollments = new Map<string, StoredEnrollment>();
 
-  // 1. Pre-seed Pooja Patel
-  const poojaCertNo = "TVC-IN-2026-2128";
-  const poojaOrderId = "ORD-TVC-2026-POOJA";
-  globalStore.tv_enrollments.set(poojaOrderId, {
-    id: "enr_pooja_1",
-    orderId: poojaOrderId,
-    userId: "usr_pooja",
-    userName: "Pooja Patel",
-    userEmail: "pooja.patel@example.com",
-    college: "Government engineering college Azamgarh",
-    courseId: "course_python_ml",
-    startDate: new Date("2026-09-07").toISOString(),
-    endDate: new Date("2026-10-22").toISOString(),
-    issueDate: new Date("2026-09-08").toISOString(),
-    mode: "Hybrid",
-    amountINR: 149,
-    paymentStatus: "PAID",
-    lor: true,
-    course: {
-      id: "course_python_ml",
-      slug: "python-for-machine-learning",
-      title: "Python for Machine Learning",
-      category: "AI/ML",
-      priceINR: 149,
-    },
-    certificate: {
-      id: "cert_pooja_1",
-      certNo: poojaCertNo,
-      enrollmentId: "enr_pooja_1",
-      pdfUrl: `/api/certificates/${poojaCertNo}/pdf`,
-      qrPayload: `https://techvision-careers.vercel.app/verify/${poojaCertNo}`,
-      issuedAt: new Date("2026-09-08").toISOString(),
-      revoked: false,
-    },
-    createdAt: new Date().toISOString(),
-  });
-
-  // 2. Pre-seed Roshan Singh
-  const roshanCertNo = "TVC-IN-2026-0142";
-  const roshanOrderId = "ORD-TVC-2026-DEMO";
-  globalStore.tv_enrollments.set(roshanOrderId, {
-    id: "enr_demo_1",
-    orderId: roshanOrderId,
-    userId: "usr_demo_1",
-    userName: "Roshan Singh",
-    userEmail: "roshan.singh@example.com",
-    college: "Indian Institute of Technology",
-    courseId: "course_web_dev",
-    startDate: new Date("2026-06-12").toISOString(),
-    endDate: new Date("2026-07-12").toISOString(),
-    issueDate: new Date("2026-06-12").toISOString(),
-    mode: "Online",
-    amountINR: 149,
-    paymentStatus: "PAID",
-    lor: true,
-    course: {
-      id: "course_web_dev",
-      slug: "full-stack-web-development-react-node",
-      title: "Full-Stack Web Development with React & Node",
-      category: "Web",
-      priceINR: 149,
-    },
-    certificate: {
-      id: "cert_demo_1",
-      certNo: roshanCertNo,
-      enrollmentId: "enr_demo_1",
-      pdfUrl: `/api/certificates/${roshanCertNo}/pdf`,
-      qrPayload: `https://techvision-careers.vercel.app/verify/${roshanCertNo}`,
-      issuedAt: new Date("2026-06-12").toISOString(),
-      revoked: false,
-    },
-    createdAt: "2026-08-22T14:39:46.419Z",
-  });
-
-  // 3. Pre-seed Roshan Patel
-  const roshanPatelCertNo = "TVC-IN-2026-4847";
-  const roshanPatelOrderId = "ORD-MT4LQ67E-FN3J";
-  globalStore.tv_enrollments.set(roshanPatelOrderId, {
-    id: "enr_roshan_patel_1",
-    orderId: roshanPatelOrderId,
-    userId: "usr_roshan_patel",
-    userName: "Roshan Patel",
-    userEmail: "patelroshansingh7@gmail.com",
-    college: "REC Azamgarh",
-    courseId: "course_genai",
-    startDate: new Date("2026-08-22").toISOString(),
-    endDate: new Date("2026-10-06").toISOString(),
-    issueDate: new Date("2026-08-22").toISOString(),
-    mode: "Hybrid",
-    amountINR: 149,
-    paymentStatus: "PAID",
-    lor: true,
-    course: {
-      id: "course_genai",
-      slug: "generative-ai-llm-apps-openai-langchain",
-      title: "Generative AI & LLM Apps (OpenAI / LangChain)",
-      category: "AI/ML",
-      priceINR: 149,
-    },
-    certificate: {
-      id: "cert_roshan_patel_1",
-      certNo: roshanPatelCertNo,
-      enrollmentId: "enr_roshan_patel_1",
-      pdfUrl: `/api/certificates/${roshanPatelCertNo}/pdf`,
-      qrPayload: `https://techvision-careers.vercel.app/verify/${roshanPatelCertNo}`,
-      issuedAt: "2026-08-22T16:37:50.207Z",
-      revoked: false,
-    },
-    createdAt: "2026-08-22T16:37:35.596Z",
-  });
-
-  // 4. Pre-seed ram
-  const ramCertNo = "TVC-IN-2026-4417";
-  const ramOrderId = "ORD-MT4MBESN-OMVR";
-  globalStore.tv_enrollments.set(ramOrderId, {
-    id: "enr_ram_1",
-    orderId: ramOrderId,
-    userId: "usr_ram",
-    userName: "ram",
-    userEmail: "pahsdghyehdhj@gmail.com",
-    college: "REC Azamgarh",
-    courseId: "course_web_dev",
-    startDate: new Date("2026-08-12").toISOString(),
-    endDate: new Date("2026-09-11").toISOString(),
-    issueDate: new Date("2026-08-22").toISOString(),
-    mode: "Hybrid",
-    amountINR: 149,
-    paymentStatus: "PAID",
-    lor: true,
-    course: {
-      id: "course_web_dev",
-      slug: "full-stack-web-development-react-node",
-      title: "Full-Stack Web Development with React & Node",
-      category: "Web",
-      priceINR: 149,
-    },
-    certificate: {
-      id: "cert_ram_1",
-      certNo: ramCertNo,
-      enrollmentId: "enr_ram_1",
-      pdfUrl: `/api/certificates/${ramCertNo}/pdf`,
-      qrPayload: `https://techvision-careers.vercel.app/verify/${ramCertNo}`,
-      issuedAt: "2026-08-22T16:54:06.507Z",
-      revoked: false,
-    },
-    createdAt: "2026-08-22T16:54:06.507Z",
-  });
-
-  // 5. Pre-seed Ritesh kushwaha
-  const riteshCertNo = "TVC-IN-2026-1982";
-  const riteshOrderId = "ORD-MT4NKGYN-9JQ6";
-  globalStore.tv_enrollments.set(riteshOrderId, {
-    id: "enr_ritesh_1",
-    orderId: riteshOrderId,
-    userId: "usr_ritesh",
-    userName: "Ritesh kushwaha",
-    userEmail: "riteshkushwaha@gmail.com",
-    college: "REC Azamgarh",
-    courseId: "course_python_ml",
-    startDate: new Date("2026-08-22").toISOString(),
-    endDate: new Date("2026-10-06").toISOString(),
-    issueDate: new Date("2026-08-22").toISOString(),
-    mode: "Online",
-    amountINR: 149,
-    utrNumber: "6543654335",
-    paymentStatus: "PAID",
-    lor: true,
-    course: {
-      id: "course_python_ml",
-      slug: "python-for-machine-learning",
-      title: "Python for Machine Learning",
-      category: "AI/ML",
-      priceINR: 149,
-    },
-    certificate: {
-      id: "cert_ritesh_1",
-      certNo: riteshCertNo,
-      enrollmentId: "enr_ritesh_1",
-      pdfUrl: `/api/certificates/${riteshCertNo}/pdf`,
-      qrPayload: `https://techvision-careers.vercel.app/verify/${riteshCertNo}`,
-      issuedAt: "2026-08-22T17:31:24.372Z",
-      revoked: false,
-    },
-    createdAt: "2026-08-22T17:29:08.834Z",
-  });
+  // Pre-seed all official certified enrollments
+  for (const enr of OFFICIAL_ISSUED_ENROLLMENTS) {
+    globalStore.tv_enrollments.set(enr.orderId, enr);
+  }
 
   // Hydrate with any saved disk entries
   const diskEntries = loadFromDisk();
@@ -552,19 +378,34 @@ export const memoryStore = {
 
   getEnrollmentByCertNo: (certNo: string): StoredEnrollment | undefined => {
     if (!certNo) return undefined;
-    const clean = certNo.trim().toLowerCase();
+    // Normalize dashes (standard hyphen, en-dash, em-dash, minus, etc.)
+    const clean = certNo.replace(/[\u2010-\u2015\u2212\uFE58\uFE63\uFF0D]/g, "-").trim().toLowerCase();
+
+    // 1. Direct search in memory
     for (const enr of globalStore.tv_enrollments.values()) {
-      if (enr.certificate && (enr.certificate.certNo || "").trim().toLowerCase() === clean) {
+      const enrCertNo = (enr.certificate?.certNo || "").replace(/[\u2010-\u2015\u2212\uFE58\uFE63\uFF0D]/g, "-").trim().toLowerCase();
+      if (enrCertNo && enrCertNo === clean) return enr;
+      if (enr.orderId && enr.orderId.trim().toLowerCase() === clean) return enr;
+    }
+
+    // 2. Direct search in OFFICIAL_ISSUED_ENROLLMENTS
+    for (const enr of OFFICIAL_ISSUED_ENROLLMENTS) {
+      const enrCertNo = (enr.certificate?.certNo || "").replace(/[\u2010-\u2015\u2212\uFE58\uFE63\uFF0D]/g, "-").trim().toLowerCase();
+      if (enrCertNo && enrCertNo === clean) {
+        globalStore.tv_enrollments.set(enr.orderId, enr);
         return enr;
       }
       if (enr.orderId && enr.orderId.trim().toLowerCase() === clean) {
+        globalStore.tv_enrollments.set(enr.orderId, enr);
         return enr;
       }
     }
-    // Re-check disk
+
+    // 3. Re-check disk
     const diskEntries = loadFromDisk();
     for (const enr of diskEntries.values()) {
-      if (enr.certificate && (enr.certificate.certNo || "").trim().toLowerCase() === clean) {
+      const enrCertNo = (enr.certificate?.certNo || "").replace(/[\u2010-\u2015\u2212\uFE58\uFE63\uFF0D]/g, "-").trim().toLowerCase();
+      if (enrCertNo && enrCertNo === clean) {
         globalStore.tv_enrollments.set(enr.orderId, enr);
         return enr;
       }
@@ -573,6 +414,23 @@ export const memoryStore = {
         return enr;
       }
     }
+
+    // 4. Suffix match (e.g. searching '1054' matches 'TVC-IN-2026-1054')
+    const matchSuffix = clean.replace(/[^0-9]/g, "");
+    if (matchSuffix.length >= 4) {
+      for (const enr of globalStore.tv_enrollments.values()) {
+        const enrCertNo = (enr.certificate?.certNo || "").replace(/[^0-9]/g, "");
+        if (enrCertNo.endsWith(matchSuffix)) return enr;
+      }
+      for (const enr of OFFICIAL_ISSUED_ENROLLMENTS) {
+        const enrCertNo = (enr.certificate?.certNo || "").replace(/[^0-9]/g, "");
+        if (enrCertNo.endsWith(matchSuffix)) {
+          globalStore.tv_enrollments.set(enr.orderId, enr);
+          return enr;
+        }
+      }
+    }
+
     return undefined;
   },
 

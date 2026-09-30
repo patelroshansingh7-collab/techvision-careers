@@ -10,7 +10,8 @@ export async function GET(
 ) {
   try {
     const rawCert = decodeURIComponent(params.cert_no || "").trim();
-    const cleanCert = rawCert.toUpperCase();
+    // Normalize dashes (standard hyphen, en-dash, em-dash, minus, etc.)
+    const cleanCert = rawCert.replace(/[\u2010-\u2015\u2212\uFE58\uFE63\uFF0D]/g, "-").toUpperCase().trim();
 
     if (!cleanCert) {
       return NextResponse.json(
