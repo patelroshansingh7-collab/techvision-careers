@@ -103,9 +103,32 @@ function saveToDisk(map: Map<string, StoredEnrollment>) {
 // Cloud Storage Sync Endpoints (Persistent across all Vercel Serverless instances)
 export const PRIMARY_CLOUD_BIN = "https://extendsclass.com/api/json-storage/bin/cfbafaa";
 export const BACKUP_CLOUD_BIN = "https://extendsclass.com/api/json-storage/bin/dcaaaba";
+export const TERTIARY_CLOUD_BIN = "https://extendsclass.com/api/json-storage/bin/abbffec";
+export const ALL_CLOUD_BINS = [PRIMARY_CLOUD_BIN, BACKUP_CLOUD_BIN, TERTIARY_CLOUD_BIN];
 
 let lastCloudSyncTime = 0;
-const CLOUD_SYNC_MIN_INTERVAL_MS = 2500;
+const CLOUD_SYNC_MIN_INTERVAL_MS = 2000;
+
+function mergeEnrollmentIntoMemory(item: StoredEnrollment) {
+  if (!item || !item.orderId) return;
+  const existing = globalStore.tv_enrollments.get(item.orderId);
+  if (!existing) {
+    globalStore.tv_enrollments.set(item.orderId, item);
+  } else {
+    // Preserve PAID status, cert data, and payment proofs
+    const isExistingPaid = existing.paymentStatus === "PAID" || !!existing.certificate;
+    const isIncomingPaid = item.paymentStatus === "PAID" || !!item.certificate;
+    if (!isExistingPaid && isIncomingPaid) {
+      globalStore.tv_enrollments.set(item.orderId, item);
+    } else if (!existing.certificate && item.certificate) {
+      existing.certificate = item.certificate;
+    }
+    if (item.paymentStatus === "PAID") existing.paymentStatus = "PAID";
+    if (!existing.utrNumber && item.utrNumber) existing.utrNumber = item.utrNumber;
+    if (!existing.paymentScreenshot && item.paymentScreenshot) existing.paymentScreenshot = item.paymentScreenshot;
+    if (!existing.paymentLink && item.paymentLink) existing.paymentLink = item.paymentLink;
+  }
+}
 
 export async function syncFromCloud(force = false): Promise<boolean> {
   const now = Date.now();
@@ -118,7 +141,7 @@ export async function syncFromCloud(force = false): Promise<boolean> {
     return true;
   }
 
-  const fetchWithTimeout = async (url: string, ms = 3500) => {
+  const fetchWithTimeout = async (url: string, ms = 7000) => {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), ms);
     try {
@@ -135,101 +158,169 @@ export async function syncFromCloud(force = false): Promise<boolean> {
     }
   };
 
-  let remoteData: any = null;
-  try {
-    remoteData = await fetchWithTimeout(PRIMARY_CLOUD_BIN);
-  } catch (err1) {
-    try {
-      remoteData = await fetchWithTimeout(BACKUP_CLOUD_BIN);
-    } catch (err2) {
-      return false;
+  // Fetch all redundant cloud bins in parallel
+  const results = await Promise.allSettled(
+    ALL_CLOUD_BINS.map((bin) => fetchWithTimeout(bin, 7000))
+  );
+
+  let mergedCount = 0;
+  for (const r of results) {
+    if (r.status !== "fulfilled" || !r.value) continue;
+    const remoteData = r.value;
+
+    // 1. Process enrollmentsMap (deeply merged object)
+    if (remoteData.enrollmentsMap && typeof remoteData.enrollmentsMap === "object") {
+      for (const item of Object.values(remoteData.enrollmentsMap) as any[]) {
+        if (!item || !item.orderId) continue;
+        mergeEnrollmentIntoMemory(item);
+        mergedCount++;
+      }
+    }
+
+    // 2. Process enrollments (list array)
+    if (Array.isArray(remoteData.enrollments)) {
+      for (const item of remoteData.enrollments) {
+        if (!item || !item.orderId) continue;
+        mergeEnrollmentIntoMemory(item);
+        mergedCount++;
+      }
+    }
+
+    // 3. Process certificatesMap
+    if (remoteData.certificatesMap && typeof remoteData.certificatesMap === "object") {
+      for (const [certNo, certObj] of Object.entries(remoteData.certificatesMap) as any[]) {
+        if (!certNo || !certObj) continue;
+        const enr = memoryStore.getEnrollmentByCertNo(certNo);
+        if (enr && !enr.certificate) {
+          enr.certificate = certObj as any;
+        }
+      }
+    }
+
+    if (remoteData.notificationConfig) {
+      saveEmailConfig(remoteData.notificationConfig);
     }
   }
 
-  if (remoteData && Array.isArray(remoteData.enrollments)) {
+  // Ensure all 14 official pre-seeded enrollments are always in the map
+  for (const off of OFFICIAL_ISSUED_ENROLLMENTS) {
+    if (!globalStore.tv_enrollments.has(off.orderId)) {
+      globalStore.tv_enrollments.set(off.orderId, off);
+    }
+  }
+
+  if (mergedCount > 0) {
     lastCloudSyncTime = Date.now();
-    for (const item of remoteData.enrollments) {
-      if (!item || !item.orderId) continue;
-      const existing = globalStore.tv_enrollments.get(item.orderId);
-      if (!existing) {
-        globalStore.tv_enrollments.set(item.orderId, item);
-      } else {
-        // Merge & update state: preserve PAID status, cert data, and payment proofs
-        const isExistingPaid = existing.paymentStatus === "PAID" || !!existing.certificate;
-        const isIncomingPaid = item.paymentStatus === "PAID" || !!item.certificate;
-        if (!isExistingPaid && isIncomingPaid) {
-          globalStore.tv_enrollments.set(item.orderId, item);
-        } else if (!existing.certificate && item.certificate) {
-          existing.certificate = item.certificate;
-        }
-        if (!existing.utrNumber && item.utrNumber) existing.utrNumber = item.utrNumber;
-        if (!existing.paymentScreenshot && item.paymentScreenshot) existing.paymentScreenshot = item.paymentScreenshot;
-        if (!existing.paymentLink && item.paymentLink) existing.paymentLink = item.paymentLink;
-      }
-    }
-    if (remoteData && remoteData.notificationConfig) {
-      saveEmailConfig(remoteData.notificationConfig);
-    }
     saveToDisk(globalStore.tv_enrollments);
     return true;
   }
   return false;
 }
 
+export async function patchEnrollmentToCloud(enr: StoredEnrollment): Promise<boolean> {
+  if (!enr || !enr.orderId) return false;
+  try {
+    const patchPayload: Record<string, any> = {
+      updatedAt: new Date().toISOString(),
+      enrollmentsMap: {
+        [enr.orderId]: enr,
+      },
+    };
+
+    if (enr.certificate && enr.certificate.certNo) {
+      patchPayload.certificatesMap = {
+        [enr.certificate.certNo]: {
+          ...enr.certificate,
+          internName: enr.userName,
+          college: enr.college,
+          courseTitle: enr.course?.title,
+          startDate: enr.startDate,
+          endDate: enr.endDate,
+          orderId: enr.orderId,
+        },
+      };
+    }
+
+    const jsonBody = JSON.stringify(patchPayload);
+
+    const patchWithTimeout = async (url: string, ms = 6000) => {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), ms);
+      try {
+        const res = await fetch(url, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: jsonBody,
+          signal: controller.signal,
+        });
+        clearTimeout(timeout);
+        return res.ok;
+      } catch (e) {
+        clearTimeout(timeout);
+        return false;
+      }
+    };
+
+    const results = await Promise.allSettled(
+      ALL_CLOUD_BINS.map((bin) => patchWithTimeout(bin, 6000))
+    );
+
+    return results.some((r) => r.status === "fulfilled" && r.value === true);
+  } catch (e) {
+    return false;
+  }
+}
+
 export async function syncToCloud(): Promise<boolean> {
   try {
-    // 1. Ensure all official pre-seeded enrollments are always in the map
+    // 1. Sync from remote first to prevent overwriting other lambdas' enrollments
+    await syncFromCloud(true).catch(() => {});
+
+    // 2. Ensure all official pre-seeded enrollments are always in the map
     for (const off of OFFICIAL_ISSUED_ENROLLMENTS) {
       if (!globalStore.tv_enrollments.has(off.orderId)) {
         globalStore.tv_enrollments.set(off.orderId, off);
       }
     }
 
-    // 2. Fetch remote and merge before upload so no new student enrollments are ever lost
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 2000);
-      const res = await fetch(PRIMARY_CLOUD_BIN, {
-        signal: controller.signal,
-        headers: { "Cache-Control": "no-cache" },
-      });
-      clearTimeout(timeout);
-      if (res.ok) {
-        const remote = await res.json();
-        if (remote && Array.isArray(remote.enrollments)) {
-          for (const item of remote.enrollments) {
-            if (!item || !item.orderId) continue;
-            const existing = globalStore.tv_enrollments.get(item.orderId);
-            if (!existing) {
-              globalStore.tv_enrollments.set(item.orderId, item);
-            } else {
-              if (!existing.certificate && item.certificate) {
-                existing.certificate = item.certificate;
-              }
-              if (existing.paymentStatus !== "PAID" && item.paymentStatus === "PAID") {
-                existing.paymentStatus = "PAID";
-              }
-              if (!existing.utrNumber && item.utrNumber) existing.utrNumber = item.utrNumber;
-              if (!existing.paymentScreenshot && item.paymentScreenshot) existing.paymentScreenshot = item.paymentScreenshot;
-            }
-          }
-        }
-      }
-    } catch (e) {
-      // Non-blocking merge error, proceed with local map
+    // Safety guard: never overwrite if map is unexpectedly empty
+    if (globalStore.tv_enrollments.size < OFFICIAL_ISSUED_ENROLLMENTS.length) {
+      return false;
     }
 
     saveToDisk(globalStore.tv_enrollments);
     const list = Array.from(globalStore.tv_enrollments.values());
+    const enrollmentsMap: Record<string, StoredEnrollment> = {};
+    const certificatesMap: Record<string, any> = {};
+
+    for (const item of list) {
+      if (item && item.orderId) {
+        enrollmentsMap[item.orderId] = item;
+        if (item.certificate?.certNo) {
+          certificatesMap[item.certificate.certNo] = {
+            ...item.certificate,
+            internName: item.userName,
+            college: item.college,
+            courseTitle: item.course?.title,
+            startDate: item.startDate,
+            endDate: item.endDate,
+            orderId: item.orderId,
+          };
+        }
+      }
+    }
+
     const emailConfig = getEmailConfig();
     const payload = JSON.stringify({
       appName: "TechVision Careers Global Ledger",
       updatedAt: new Date().toISOString(),
       enrollments: list,
+      enrollmentsMap,
+      certificatesMap,
       notificationConfig: emailConfig,
     });
 
-    const putWithTimeout = async (url: string, ms = 4000) => {
+    const putWithTimeout = async (url: string, ms = 7500) => {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), ms);
       try {
@@ -247,16 +338,11 @@ export async function syncToCloud(): Promise<boolean> {
       }
     };
 
-    const [ok1, ok2] = await Promise.allSettled([
-      putWithTimeout(PRIMARY_CLOUD_BIN),
-      putWithTimeout(BACKUP_CLOUD_BIN),
-    ]);
-
-    return (
-      (ok1.status === "fulfilled" && ok1.value) ||
-      (ok2.status === "fulfilled" && ok2.value) ||
-      false
+    const results = await Promise.allSettled(
+      ALL_CLOUD_BINS.map((bin) => putWithTimeout(bin, 7500))
     );
+
+    return results.some((r) => r.status === "fulfilled" && r.value === true);
   } catch (e) {
     return false;
   }
@@ -324,6 +410,7 @@ export const memoryStore = {
 
     globalStore.tv_enrollments.set(orderId, enrollment);
     saveToDisk(globalStore.tv_enrollments);
+    patchEnrollmentToCloud(enrollment).catch(() => {});
     syncToCloud().catch(() => {});
     return enrollment;
   },
@@ -350,6 +437,7 @@ export const memoryStore = {
       if (data.paymentLink) existing.paymentLink = data.paymentLink;
       if (data.paymentStatus) existing.paymentStatus = data.paymentStatus;
       saveToDisk(globalStore.tv_enrollments);
+      patchEnrollmentToCloud(existing).catch(() => {});
       syncToCloud().catch(() => {});
       return existing;
     }
@@ -394,6 +482,7 @@ export const memoryStore = {
 
     globalStore.tv_enrollments.set(data.orderId, enrollment);
     saveToDisk(globalStore.tv_enrollments);
+    patchEnrollmentToCloud(enrollment).catch(() => {});
     syncToCloud().catch(() => {});
     return enrollment;
   },
@@ -524,6 +613,7 @@ export const memoryStore = {
 
     globalStore.tv_enrollments.set(orderId, enr);
     saveToDisk(globalStore.tv_enrollments);
+    patchEnrollmentToCloud(enr).catch(() => {});
     syncToCloud().catch(() => {});
     return enr;
   },
@@ -556,6 +646,7 @@ export const memoryStore = {
 
     globalStore.tv_enrollments.set(orderId, enr);
     saveToDisk(globalStore.tv_enrollments);
+    patchEnrollmentToCloud(enr).catch(() => {});
     syncToCloud().catch(() => {});
     return enr;
   },
@@ -567,6 +658,7 @@ export const memoryStore = {
     enr.paymentStatus = "REJECTED";
     globalStore.tv_enrollments.set(orderId, enr);
     saveToDisk(globalStore.tv_enrollments);
+    patchEnrollmentToCloud(enr).catch(() => {});
     syncToCloud().catch(() => {});
     return enr;
   },
@@ -637,6 +729,7 @@ export const memoryStore = {
 
     globalStore.tv_enrollments.set(orderId, enrollment);
     saveToDisk(globalStore.tv_enrollments);
+    patchEnrollmentToCloud(enrollment).catch(() => {});
     syncToCloud().catch(() => {});
     return enrollment;
   },
@@ -656,6 +749,7 @@ export const memoryStore = {
         enr.certificate.revoked = revoke;
         globalStore.tv_enrollments.set(enr.orderId, enr);
         saveToDisk(globalStore.tv_enrollments);
+        patchEnrollmentToCloud(enr).catch(() => {});
         syncToCloud().catch(() => {});
         return enr;
       }
@@ -663,6 +757,7 @@ export const memoryStore = {
     return undefined;
   },
 
+  patchEnrollmentToCloud,
   syncFromCloud,
   syncToCloud,
 

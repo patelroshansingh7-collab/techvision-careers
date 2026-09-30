@@ -6,6 +6,7 @@ import { memoryStore } from "@/lib/store";
 import { sendEnrollmentNotifications } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 30;
 
 export async function POST(req: NextRequest) {
   try {
@@ -122,6 +123,8 @@ export async function POST(req: NextRequest) {
 
         // Sync to cloud storage so all serverless lambdas have the record immediately
         try {
+          const memRecord = memoryStore.getEnrollmentByOrderId(enrollment.orderId);
+          if (memRecord) await memoryStore.patchEnrollmentToCloud(memRecord);
           await memoryStore.syncToCloud();
         } catch (e) {}
 
@@ -148,6 +151,7 @@ export async function POST(req: NextRequest) {
 
     // Sync to cloud storage immediately
     try {
+      await memoryStore.patchEnrollmentToCloud(memEnrollment);
       await memoryStore.syncToCloud();
     } catch (e) {}
 

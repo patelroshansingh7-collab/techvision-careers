@@ -95,23 +95,26 @@ export const CertificateView: React.FC<CertificateViewProps> = ({
 
   // Build full verifiable URL for mobile phone scanning
   const getVerificationUrl = () => {
-    // If an explicit certNo is provided, ALWAYS construct the official public verification link for this student!
-    if (data.certNo && data.certNo.trim().length > 0) {
-      const cleanId = data.certNo.trim();
-      return `https://techvision-careers.vercel.app/verify/${encodeURIComponent(cleanId)}`;
+    const cleanId = (data.certNo || "TVC-IN-2026-0142").trim();
+    const params = new URLSearchParams();
+    if (data.internName) params.set("n", data.internName);
+    if (data.courseTitle) params.set("c", data.courseTitle);
+    if (data.startDate) {
+      try {
+        const sDate = typeof data.startDate === "string" ? data.startDate : data.startDate.toISOString();
+        params.set("s", sDate.split("T")[0]);
+      } catch (e) {}
     }
-
-    // If a non-local URL was passed in, use it
-    if (
-      data.qrPayload &&
-      data.qrPayload.startsWith("http") &&
-      !data.qrPayload.includes("localhost") &&
-      !data.qrPayload.includes("172.11") &&
-      !data.qrPayload.includes("/admin")
-    ) {
-      return data.qrPayload;
+    if (data.endDate) {
+      try {
+        const eDate = typeof data.endDate === "string" ? data.endDate : data.endDate.toISOString();
+        params.set("e", eDate.split("T")[0]);
+      } catch (e) {}
     }
+    if (data.mode) params.set("m", data.mode);
+    const queryStr = params.toString();
 
+    let baseUrl = "https://techvision-careers.vercel.app";
     if (typeof window !== "undefined") {
       const origin = window.location.origin;
       if (
@@ -119,12 +122,11 @@ export const CertificateView: React.FC<CertificateViewProps> = ({
         !origin.includes("127.0.0.1") &&
         !origin.includes("172.11")
       ) {
-        return `${origin}/verify/${encodeURIComponent(certId)}`;
+        baseUrl = origin;
       }
     }
 
-    // Default to the live Vercel production domain
-    return `https://techvision-careers.vercel.app/verify/${encodeURIComponent(certId)}`;
+    return `${baseUrl}/verify/${encodeURIComponent(cleanId)}${queryStr ? `?${queryStr}` : ""}`;
   };
 
   const verifyUrl = getVerificationUrl();

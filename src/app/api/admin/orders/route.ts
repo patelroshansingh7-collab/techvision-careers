@@ -5,6 +5,7 @@ import { memoryStore } from "@/lib/store";
 import { sendCertificateIssuedNotifications } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 30;
 
 export async function GET(req: NextRequest) {
   try {
@@ -167,6 +168,7 @@ export async function POST(req: NextRequest) {
         }
       }
 
+      await memoryStore.patchEnrollmentToCloud(newEnr).catch(() => {});
       await memoryStore.syncToCloud().catch(() => {});
 
       return NextResponse.json({
@@ -287,6 +289,9 @@ export async function POST(req: NextRequest) {
       }
 
       // 6. Sync updated certificate immediately to cloud storage
+      if (memEnr) {
+        await memoryStore.patchEnrollmentToCloud(memEnr).catch(() => {});
+      }
       await memoryStore.syncToCloud().catch(() => {});
 
       // 7. Send certificate ready email notification directly to student (no admin spam)
