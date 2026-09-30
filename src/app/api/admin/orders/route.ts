@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Sync from persistent cloud storage first so admin always has the latest enrollments
-    await memoryStore.syncFromCloud().catch(() => {});
+    await memoryStore.syncFromCloud(true).catch(() => {});
     const memOrders = memoryStore.getAllEnrollments();
     let dbOrders: any[] = [];
 
@@ -53,28 +53,33 @@ export async function GET(req: NextRequest) {
       const courseSlug = (order.course?.slug || order.course?.title || "").toLowerCase().trim();
       const identityKey = studentName && courseSlug ? `${studentName}|${courseSlug}` : null;
 
-      // 1. Check if certNo already seen
-      if (certNo && certIndex.has(certNo)) {
-        const existingOrderId = certIndex.get(certNo)!;
-        const existing = orderMap.get(existingOrderId);
-        if (existing) {
-          orderMap.set(existingOrderId, { ...existing, ...order, orderId: existingOrderId });
-          return;
-        }
-      }
+      // Never deduplicate pending/submitted orders that need admin review
+      const isPending = order.paymentStatus === "SUBMITTED" || order.paymentStatus === "PENDING";
 
-      // 2. Check if student identity already seen with same cert
-      if (identityKey && identityIndex.has(identityKey)) {
-        const existingOrderId = identityIndex.get(identityKey)!;
-        const existing = orderMap.get(existingOrderId);
-        if (existing && existing.certificate && order.certificate) {
-          orderMap.set(existingOrderId, { ...existing, ...order, orderId: existingOrderId });
-          return;
+      if (!isPending) {
+        // 1. Check if certNo already seen
+        if (certNo && certIndex.has(certNo)) {
+          const existingOrderId = certIndex.get(certNo)!;
+          const existing = orderMap.get(existingOrderId);
+          if (existing) {
+            orderMap.set(existingOrderId, { ...existing, ...order, orderId: existingOrderId });
+            return;
+          }
+        }
+
+        // 2. Check if student identity already seen with same cert
+        if (identityKey && identityIndex.has(identityKey)) {
+          const existingOrderId = identityIndex.get(identityKey)!;
+          const existing = orderMap.get(existingOrderId);
+          if (existing && existing.certificate && order.certificate) {
+            orderMap.set(existingOrderId, { ...existing, ...order, orderId: existingOrderId });
+            return;
+          }
         }
       }
 
       if (certNo) certIndex.set(certNo, order.orderId);
-      if (identityKey) identityIndex.set(identityKey, order.orderId);
+      if (identityKey && !isPending) identityIndex.set(identityKey, order.orderId);
       orderMap.set(order.orderId, order);
     }
 

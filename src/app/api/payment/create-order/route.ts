@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     if (!enrollment) {
       let memEnr = memoryStore.getEnrollmentByOrderId(orderId);
       if (!memEnr) {
-        await memoryStore.syncFromCloud().catch(() => {});
+        await memoryStore.syncFromCloud(true).catch(() => {});
         memEnr = memoryStore.getEnrollmentByOrderId(orderId);
       }
       if (memEnr) {
@@ -43,6 +43,7 @@ export async function POST(req: NextRequest) {
           utrNumber: memEnr.utrNumber,
           user: { email: memEnr.userEmail },
           course: { title: memEnr.course.title },
+          certificate: memEnr.certificate,
         };
       }
     }
@@ -93,6 +94,7 @@ export async function POST(req: NextRequest) {
       userName: enrollment.userName,
       userEmail: enrollment.user?.email || enrollment.userEmail || "candidate@gmail.com",
       courseTitle: enrollment.course?.title || "Internship Course",
+      certificate: enrollment.certificate || null,
     });
   } catch (error) {
     console.error("Payment order creation error:", error);

@@ -86,6 +86,7 @@ export default function AdminDashboardPage() {
   // Modal State for Viewing Payment Screenshot
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [previewOrder, setPreviewOrder] = useState<any | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
   const [copiedUtr, setCopiedUtr] = useState<string | null>(null);
 
   // Modal State for Adding New Student Directly
@@ -552,6 +553,30 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const handleOpenScreenshot = async (order: any) => {
+    setPreviewOrder(order);
+    const target = order.paymentScreenshot;
+    if (!target) return;
+    if (target.startsWith("http")) {
+      setPreviewLoading(true);
+      setPreviewImage(null);
+      try {
+        const res = await fetch(target).then((r) => r.json());
+        if (res && res.screenshot) {
+          setPreviewImage(res.screenshot);
+        } else {
+          setPreviewImage(target);
+        }
+      } catch (e) {
+        setPreviewImage(target);
+      } finally {
+        setPreviewLoading(false);
+      }
+    } else {
+      setPreviewImage(target);
+    }
+  };
+
   const handleRevokeToggle = async (certNo: string, currentRevoked: boolean) => {
     try {
       // Optimistic update
@@ -692,7 +717,11 @@ export default function AdminDashboardPage() {
   const paidOrders = orders.filter(
     (o) => o.paymentStatus === "PAID" || o.paymentStatus === "MANUAL_APPROVED"
   );
-  const pendingOrders = orders.filter((o) => o.paymentStatus === "SUBMITTED");
+  const pendingOrders = orders.filter(
+    (o) =>
+      o.paymentStatus === "SUBMITTED" ||
+      (o.paymentStatus === "PENDING" && (Boolean(o.paymentScreenshot) || Boolean(o.utrNumber)))
+  );
   const activeCertificatesList = orders.filter((o) => o.certificate && !o.certificate.revoked);
   const revokedCertificatesList = orders.filter((o) => o.certificate && o.certificate.revoked);
   const totalRevenueINR = paidOrders.reduce((sum, o) => sum + (Number(o.amountINR) || 149), 0);
@@ -1299,10 +1328,7 @@ export default function AdminDashboardPage() {
                     <span className="text-slate-400 font-medium">Screenshot Proof:</span>
                     {order.paymentScreenshot ? (
                       <button
-                        onClick={() => {
-                          setPreviewImage(order.paymentScreenshot);
-                          setPreviewOrder(order);
-                        }}
+                        onClick={() => handleOpenScreenshot(order)}
                         className="py-1 px-2.5 bg-indigo-950 hover:bg-indigo-900 text-indigo-200 border border-indigo-700/80 rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition cursor-pointer shadow-sm"
                       >
                         <Eye className="w-3.5 h-3.5 text-indigo-400" />
@@ -1433,10 +1459,7 @@ export default function AdminDashboardPage() {
                               </span>
                             )}
                             <button
-                              onClick={() => {
-                                setPreviewImage(order.paymentScreenshot);
-                                setPreviewOrder(order);
-                              }}
+                              onClick={() => handleOpenScreenshot(order)}
                               className="text-[11px] text-indigo-300 hover:text-indigo-200 bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-800/70 px-2 py-0.5 rounded font-bold inline-flex items-center gap-1 transition cursor-pointer"
                             >
                               <Eye className="w-3 h-3 text-indigo-400" />
@@ -1543,13 +1566,14 @@ export default function AdminDashboardPage() {
       {/* =========================================================================
           SCREENSHOT PREVIEW MODAL
           ========================================================================= */}
-      {previewImage && previewOrder && (
+      {(previewImage || previewLoading) && previewOrder && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-lg w-full space-y-4 shadow-2xl relative">
             <button
               onClick={() => {
                 setPreviewImage(null);
                 setPreviewOrder(null);
+                setPreviewLoading(false);
               }}
               className="absolute top-4 right-4 p-2 rounded-full bg-slate-800 text-slate-300 hover:text-white"
             >
@@ -1571,12 +1595,21 @@ export default function AdminDashboardPage() {
             </div>
 
             {/* Image Container */}
-            <div className="bg-black rounded-2xl p-2 max-h-[60vh] overflow-auto flex items-center justify-center border border-slate-800">
-              <img
-                src={previewImage}
-                alt="Payment Screenshot"
-                className="max-w-full max-h-[55vh] object-contain rounded-xl"
-              />
+            <div className="bg-black rounded-2xl p-2 min-h-[200px] max-h-[60vh] overflow-auto flex items-center justify-center border border-slate-800">
+              {previewLoading ? (
+                <div className="flex flex-col items-center justify-center py-12 space-y-3">
+                  <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                  <span className="text-xs text-slate-400 font-medium">Loading payment screenshot...</span>
+                </div>
+              ) : previewImage ? (
+                <img
+                  src={previewImage}
+                  alt="Payment Screenshot"
+                  className="max-w-full max-h-[55vh] object-contain rounded-xl"
+                />
+              ) : (
+                <div className="text-xs text-slate-500 py-12">Unable to load screenshot.</div>
+              )}
             </div>
 
             {/* Approve Button in Modal */}

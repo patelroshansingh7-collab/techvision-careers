@@ -64,24 +64,50 @@ export default function GenerateCertificatePage({
       if (studentData.success && studentData.enrollments?.length > 0) {
         const found = studentData.enrollments[0];
         setOrderInfo((prev: any) => ({ ...prev, ...found }));
-          if (found.certificate) {
+        if (found.certificate) {
+          const fallbackCert = {
+            certNo: found.certificate.certNo,
+            internName: found.userName || data.userName || "Candidate",
+            courseTitle: found.course?.title || data.courseTitle || "Engineering Internship",
+            startDate: found.startDate || data.startDate || new Date().toISOString(),
+            endDate: found.endDate || data.endDate || new Date().toISOString(),
+            issuedAt: found.certificate.issuedAt || found.issueDate || new Date().toISOString(),
+            mode: found.mode || data.mode || "Online",
+            qrPayload: found.certificate.qrPayload || `https://techvision-careers.vercel.app/verify/${found.certificate.certNo}`,
+          };
+          setCertData(fallbackCert);
+
+          try {
             const certRes = await fetch(`/api/certificates/${found.certificate.certNo}`);
             const certFull = await certRes.json();
-            if (certFull.success) {
+            if (certFull.success && certFull.certificate) {
               setCertData(certFull.certificate);
-
-              // Trigger celebration confetti
-              try {
-                confetti({
-                  particleCount: 90,
-                  spread: 65,
-                  origin: { y: 0.6 },
-                  colors: ["#C9A14A", "#0E1B47", "#E8C97A", "#10B981"],
-                });
-              } catch {}
             }
-          }
+          } catch (e) {}
+
+          // Trigger celebration confetti
+          try {
+            confetti({
+              particleCount: 90,
+              spread: 65,
+              origin: { y: 0.6 },
+              colors: ["#C9A14A", "#0E1B47", "#E8C97A", "#10B981"],
+            });
+          } catch {}
         }
+      } else if (data.certificate) {
+        const fallbackCert = {
+          certNo: data.certificate.certNo,
+          internName: data.userName || "Candidate",
+          courseTitle: data.courseTitle || "Engineering Internship",
+          startDate: data.startDate || new Date().toISOString(),
+          endDate: data.endDate || new Date().toISOString(),
+          issuedAt: data.certificate.issuedAt || new Date().toISOString(),
+          mode: data.mode || "Online",
+          qrPayload: data.certificate.qrPayload || `https://techvision-careers.vercel.app/verify/${data.certificate.certNo}`,
+        };
+        setCertData(fallbackCert);
+      }
       } catch (err: any) {
       setError(err.message || "Error fetching status");
     } finally {
@@ -234,6 +260,30 @@ export default function GenerateCertificatePage({
   }
 
   // 4. APPROVED & CERTIFICATE ISSUED!
+  if (!certData) {
+    return (
+      <div className="py-24 flex flex-col items-center justify-center space-y-4">
+        <Loader2 className="w-10 h-10 text-brand-gold animate-spin" />
+        <h2 className="text-base font-bold text-white">
+          Preparing Official Certificate...
+        </h2>
+        <p className="text-xs text-slate-400">
+          Formatting verified credentials for {orderInfo?.userName || "Candidate"}
+        </p>
+        <button
+          onClick={fetchOrderAndCert}
+          className="mt-2 py-2.5 px-5 bg-brand-gold hover:bg-brand-gold-light text-slate-950 font-bold text-xs rounded-xl shadow-lg transition"
+        >
+          View Certificate Now
+        </button>
+      </div>
+    );
+  }
+
+  const activeCertNo = certData?.certNo || orderInfo?.certificate?.certNo || "TVC-IN-2026-0142";
+  const activeStudentName = certData?.internName || orderInfo?.userName || "Student";
+  const activeCourseTitle = certData?.courseTitle || orderInfo?.course?.title || orderInfo?.courseTitle || "Technical Internship";
+
   return (
     <div className="py-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
       {/* Top Banner Celebration */}
@@ -245,21 +295,21 @@ export default function GenerateCertificatePage({
               PAYMENT VERIFIED & APPROVED BY ADMIN
             </span>
             <span className="text-xs text-brand-gold-light font-mono font-bold">
-              CIN: {certData.certNo}
+              CIN: {activeCertNo}
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-white">
-            Congratulations, {certData.internName}! 🎉
+            Congratulations, {activeStudentName}! 🎉
           </h1>
           <p className="text-xs sm:text-sm text-slate-300">
             Your official Technical Internship Credential in{" "}
-            <strong className="text-white">{certData.courseTitle}</strong> is now live and verifiable.
+            <strong className="text-white">{activeCourseTitle}</strong> is now live and verifiable.
           </p>
         </div>
 
         <div className="flex items-center gap-3">
           <Link
-            href={`/verify/${certData.certNo}`}
+            href={`/verify/${encodeURIComponent(activeCertNo)}`}
             target="_blank"
             className="py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition"
           >
@@ -272,8 +322,8 @@ export default function GenerateCertificatePage({
       {/* Action Buttons Row */}
       <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5">
         <CertificateActions
-          certNo={certData.certNo}
-          internName={certData.internName}
+          certNo={activeCertNo}
+          internName={activeStudentName}
           containerId="issued-certificate-view"
         />
       </div>
@@ -288,7 +338,7 @@ export default function GenerateCertificatePage({
             </span>
           </div>
           <span className="font-mono text-brand-gold-light font-bold">
-            {certData.certNo}
+            {activeCertNo}
           </span>
         </div>
 
@@ -296,14 +346,14 @@ export default function GenerateCertificatePage({
         <div className="w-full flex justify-center py-2">
           <CertificateView
             data={{
-              certNo: certData.certNo,
-              internName: certData.internName,
-              courseTitle: certData.courseTitle,
-              startDate: certData.startDate,
-              endDate: certData.endDate,
-              issueDate: certData.issuedAt,
-              mode: certData.mode,
-              qrPayload: certData.qrPayload,
+              certNo: activeCertNo,
+              internName: activeStudentName,
+              courseTitle: activeCourseTitle,
+              startDate: certData?.startDate || orderInfo?.startDate || new Date().toISOString(),
+              endDate: certData?.endDate || orderInfo?.endDate || new Date().toISOString(),
+              issueDate: certData?.issuedAt || orderInfo?.issueDate || new Date().toISOString(),
+              mode: certData?.mode || orderInfo?.mode || "Online",
+              qrPayload: certData?.qrPayload || `https://techvision-careers.vercel.app/verify/${activeCertNo}`,
             }}
             containerId="issued-certificate-view"
           />

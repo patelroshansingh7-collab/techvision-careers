@@ -5,6 +5,7 @@ import { memoryStore } from "@/lib/store";
 import { sendPaymentProofNotifications, sendCertificateIssuedNotifications } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 30;
 
 export async function POST(req: NextRequest) {
   try {
@@ -39,13 +40,19 @@ export async function POST(req: NextRequest) {
       (utrNumber && utrNumber.trim()) ||
       (paymentScreenshot ? "SCREENSHOT_PROOF" : null);
 
+    // Offload heavy base64 screenshot to dedicated cloud storage bin so main ledger stays ultra-light (< 20KB)
+    let finalScreenshot = paymentScreenshot;
+    if (paymentScreenshot && paymentScreenshot.length > 500 && !paymentScreenshot.startsWith("http")) {
+      finalScreenshot = await memoryStore.offloadScreenshotToCloud(orderId, paymentScreenshot).catch(() => paymentScreenshot);
+    }
+
     // 1. Sync from cloud storage first so this lambda instance has the latest order
     await memoryStore.syncFromCloud().catch(() => {});
 
     // 2. Try Memory Store
     let memEnr = memoryStore.submitPaymentProof(orderId, {
       utrNumber: effectiveUtr,
-      paymentScreenshot,
+      paymentScreenshot: finalScreenshot,
       paymentLink,
       isSimulated,
     });
@@ -168,7 +175,7 @@ export async function POST(req: NextRequest) {
         college,
         amountINR: amountINR || 149,
         utrNumber: effectiveUtr,
-        paymentScreenshot,
+        paymentScreenshot: finalScreenshot,
         paymentLink,
         paymentStatus: isSimulated ? "PAID" : "SUBMITTED",
       });
@@ -183,13 +190,14 @@ export async function POST(req: NextRequest) {
           courseTitle: finalCourseTitle || memEnr.course?.title || "Internship Course",
           orderId,
           utrNumber: effectiveUtr,
-          hasScreenshot: !!paymentScreenshot,
+          hasScreenshot: !!finalScreenshot,
         });
       } catch (err) {
         console.error("Notification dispatch error:", err);
       }
 
       // Persist proof to cloud bins
+      await memoryStore.patchEnrollmentToCloud(memEnr).catch(() => {});
       await memoryStore.syncToCloud().catch(() => {});
 
       return NextResponse.json({

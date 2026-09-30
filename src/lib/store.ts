@@ -217,26 +217,59 @@ export async function syncFromCloud(force = false): Promise<boolean> {
   return false;
 }
 
+export async function offloadScreenshotToCloud(orderId: string, screenshotBase64: string): Promise<string> {
+  if (!screenshotBase64 || screenshotBase64.length < 500 || screenshotBase64.startsWith("http")) {
+    return screenshotBase64;
+  }
+  try {
+    const res = await fetch("https://extendsclass.com/api/json-storage/bin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        orderId,
+        screenshot: screenshotBase64,
+        createdAt: new Date().toISOString(),
+      }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.uri) {
+        return data.uri;
+      }
+    }
+  } catch (e) {
+    console.error("Screenshot cloud offload error:", e);
+  }
+  return screenshotBase64;
+}
+
 export async function patchEnrollmentToCloud(enr: StoredEnrollment): Promise<boolean> {
   if (!enr || !enr.orderId) return false;
   try {
+    // If screenshot is a large base64 image, offload to dedicated cloud bin to keep main ledger < 20KB
+    const cleanEnr = { ...enr };
+    if (cleanEnr.paymentScreenshot && cleanEnr.paymentScreenshot.length > 500 && !cleanEnr.paymentScreenshot.startsWith("http")) {
+      cleanEnr.paymentScreenshot = await offloadScreenshotToCloud(enr.orderId, cleanEnr.paymentScreenshot).catch(() => cleanEnr.paymentScreenshot);
+      enr.paymentScreenshot = cleanEnr.paymentScreenshot;
+    }
+
     const patchPayload: Record<string, any> = {
       updatedAt: new Date().toISOString(),
       enrollmentsMap: {
-        [enr.orderId]: enr,
+        [cleanEnr.orderId]: cleanEnr,
       },
     };
 
-    if (enr.certificate && enr.certificate.certNo) {
+    if (cleanEnr.certificate && cleanEnr.certificate.certNo) {
       patchPayload.certificatesMap = {
-        [enr.certificate.certNo]: {
-          ...enr.certificate,
-          internName: enr.userName,
-          college: enr.college,
-          courseTitle: enr.course?.title,
-          startDate: enr.startDate,
-          endDate: enr.endDate,
-          orderId: enr.orderId,
+        [cleanEnr.certificate.certNo]: {
+          ...cleanEnr.certificate,
+          internName: cleanEnr.userName,
+          college: cleanEnr.college,
+          courseTitle: cleanEnr.course?.title,
+          startDate: cleanEnr.startDate,
+          endDate: cleanEnr.endDate,
+          orderId: cleanEnr.orderId,
         },
       };
     }
@@ -295,6 +328,10 @@ export async function syncToCloud(): Promise<boolean> {
 
     for (const item of list) {
       if (item && item.orderId) {
+        // Offload screenshot if still raw base64
+        if (item.paymentScreenshot && item.paymentScreenshot.length > 500 && !item.paymentScreenshot.startsWith("http")) {
+          item.paymentScreenshot = await offloadScreenshotToCloud(item.orderId, item.paymentScreenshot).catch(() => item.paymentScreenshot);
+        }
         enrollmentsMap[item.orderId] = item;
         if (item.certificate?.certNo) {
           certificatesMap[item.certificate.certNo] = {
@@ -757,6 +794,7 @@ export const memoryStore = {
     return undefined;
   },
 
+  offloadScreenshotToCloud,
   patchEnrollmentToCloud,
   syncFromCloud,
   syncToCloud,
