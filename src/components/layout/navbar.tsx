@@ -46,7 +46,7 @@ export const Navbar: React.FC = () => {
           </Link>
 
           <Link
-            href="/verify/TVC-IN-2026-0142"
+            href="/verify"
             className="px-3.5 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/80 transition flex items-center gap-1.5"
           >
             <ShieldCheck className="w-4 h-4 text-emerald-400" />
@@ -99,7 +99,7 @@ export const Navbar: React.FC = () => {
             Browse 22+ IT Courses
           </Link>
           <Link
-            href="/verify/TVC-IN-2026-0142"
+            href="/verify"
             onClick={() => setMobileMenuOpen(false)}
             className="block px-3 py-2 rounded-lg text-sm text-slate-200 hover:bg-slate-800"
           >

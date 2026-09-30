@@ -246,7 +246,7 @@ export default function DashboardPage() {
                 Browse 22+ Internship Tracks
               </Link>
               <Link
-                href="/verify/TVC-IN-2026-0142"
+                href="/verify"
                 className="py-2.5 px-4 bg-slate-950 hover:bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800 rounded-xl font-medium transition"
               >
                 Open QR Verification Portal

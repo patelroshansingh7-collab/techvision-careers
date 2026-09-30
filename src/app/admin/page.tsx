@@ -392,22 +392,22 @@ export default function AdminDashboardPage() {
       const targetOrder = orders.find((o) => o.orderId === orderId);
       // Optimistic update
       setOrders((prev) =>
-        prev.map((o) =>
-          o.orderId === orderId
-            ? {
-                ...o,
-                paymentStatus: "PAID",
-                certificate: o.certificate || {
-                  id: `cert_${Date.now()}`,
-                  certNo: `TVC-IN-2026-${Math.floor(1000 + Math.random() * 9000)}`,
-                  pdfUrl: "",
-                  qrPayload: `https://techvision-careers.vercel.app/admin`,
-                  issuedAt: new Date().toISOString(),
-                  revoked: false,
-                },
-              }
-            : o
-        )
+        prev.map((o) => {
+          if (o.orderId !== orderId) return o;
+          const tempCertNo = o.certificate?.certNo || `TVC-IN-2026-${Math.floor(1000 + Math.random() * 9000)}`;
+          return {
+            ...o,
+            paymentStatus: "PAID",
+            certificate: o.certificate || {
+              id: `cert_${Date.now()}`,
+              certNo: tempCertNo,
+              pdfUrl: `/api/certificates/${tempCertNo}/pdf`,
+              qrPayload: `https://techvision-careers.vercel.app/verify/${tempCertNo}`,
+              issuedAt: new Date().toISOString(),
+              revoked: false,
+            },
+          };
+        })
       );
 
       const res = await fetch("/api/admin/orders", {

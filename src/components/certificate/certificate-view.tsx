@@ -95,12 +95,19 @@ export const CertificateView: React.FC<CertificateViewProps> = ({
 
   // Build full verifiable URL for mobile phone scanning
   const getVerificationUrl = () => {
+    // If an explicit certNo is provided, ALWAYS construct the official public verification link for this student!
+    if (data.certNo && data.certNo.trim().length > 0) {
+      const cleanId = data.certNo.trim();
+      return `https://techvision-careers.vercel.app/verify/${encodeURIComponent(cleanId)}`;
+    }
+
     // If a non-local URL was passed in, use it
     if (
       data.qrPayload &&
       data.qrPayload.startsWith("http") &&
       !data.qrPayload.includes("localhost") &&
-      !data.qrPayload.includes("172.11")
+      !data.qrPayload.includes("172.11") &&
+      !data.qrPayload.includes("/admin")
     ) {
       return data.qrPayload;
     }
@@ -112,12 +119,12 @@ export const CertificateView: React.FC<CertificateViewProps> = ({
         !origin.includes("127.0.0.1") &&
         !origin.includes("172.11")
       ) {
-        return `${origin}/verify/${certId}`;
+        return `${origin}/verify/${encodeURIComponent(certId)}`;
       }
     }
 
     // Default to the live Vercel production domain
-    return `https://techvision-careers.vercel.app/verify/${certId}`;
+    return `https://techvision-careers.vercel.app/verify/${encodeURIComponent(certId)}`;
   };
 
   const verifyUrl = getVerificationUrl();

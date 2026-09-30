@@ -106,9 +106,10 @@ export const BACKUP_CLOUD_BIN = "https://extendsclass.com/api/json-storage/bin/d
 let lastCloudSyncTime = 0;
 const CLOUD_SYNC_MIN_INTERVAL_MS = 2500;
 
-export async function syncFromCloud(): Promise<boolean> {
+export async function syncFromCloud(force = false): Promise<boolean> {
   const now = Date.now();
   if (
+    !force &&
     now - lastCloudSyncTime < CLOUD_SYNC_MIN_INTERVAL_MS &&
     globalStore.tv_enrollments &&
     globalStore.tv_enrollments.size > 0
@@ -550,15 +551,24 @@ export const memoryStore = {
   },
 
   getEnrollmentByCertNo: (certNo: string): StoredEnrollment | undefined => {
+    if (!certNo) return undefined;
+    const clean = certNo.trim().toLowerCase();
     for (const enr of globalStore.tv_enrollments.values()) {
-      if (enr.certificate && enr.certificate.certNo === certNo) {
+      if (enr.certificate && (enr.certificate.certNo || "").trim().toLowerCase() === clean) {
+        return enr;
+      }
+      if (enr.orderId && enr.orderId.trim().toLowerCase() === clean) {
         return enr;
       }
     }
     // Re-check disk
     const diskEntries = loadFromDisk();
     for (const enr of diskEntries.values()) {
-      if (enr.certificate && enr.certificate.certNo === certNo) {
+      if (enr.certificate && (enr.certificate.certNo || "").trim().toLowerCase() === clean) {
+        globalStore.tv_enrollments.set(enr.orderId, enr);
+        return enr;
+      }
+      if (enr.orderId && enr.orderId.trim().toLowerCase() === clean) {
         globalStore.tv_enrollments.set(enr.orderId, enr);
         return enr;
       }

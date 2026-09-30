@@ -38,7 +38,7 @@ export const Footer: React.FC = () => {
                 </Link>
               </li>
               <li>
-                <Link href="/verify/TVC-IN-2026-0142" className="hover:text-brand-gold-light transition">
+                <Link href="/verify" className="hover:text-brand-gold-light transition">
                   QR Credential Verification
                 </Link>
               </li>
